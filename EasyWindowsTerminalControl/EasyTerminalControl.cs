@@ -1,21 +1,48 @@
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
+#if WPF
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+#else
+using System.Drawing;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.Terminal.WinUI3;
+using FontFamily = Microsoft.UI.Xaml.Media.FontFamily;
+using Microsoft.UI.Xaml.Input;
+#endif
+using EasyWindowsTerminalControl.Internals;
 using Microsoft.Terminal.Wpf;
 
-namespace ConPtyTermEmulatorLib {
-	public class BasicTerminalControl : UserControl {
-		public BasicTerminalControl() {
+using System.Diagnostics;
+
+
+namespace EasyWindowsTerminalControl {
+	public class EasyTerminalControl : UserControl {
+		/// <summary>
+		/// Converts Color to COLOREF, note that COLOREF does not support alpha channels so it is ignored
+		/// </summary>
+		/// <param name="color"></param>
+		/// <returns></returns>
+		public static uint ColorToVal(Color color) => BitConverter.ToUInt32(new byte[] { color.R, color.G, color.B, 0 }, 0);
+		public EasyTerminalControl() {
 			InitializeComponent();
 			SetKBCaptureOptions();
+#if WPF
+#else
+			this.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, OnVisibleChanged);
+#endif
 		}
+#if WPF
+#else
+		private void OnVisibleChanged(DependencyObject sender, DependencyProperty dp) {
+			if (Terminal != null)
+				Terminal.Visibility = Visibility;
+		}
+#endif
 		[Flags]
 		[System.ComponentModel.TypeConverter(typeof(System.ComponentModel.EnumConverter))]
 		public enum INPUT_CAPTURE { None = 1 << 0, TabKey = 1 << 1, DirectionKeys = 1 << 2 };
@@ -23,12 +50,14 @@ namespace ConPtyTermEmulatorLib {
 
 
 		private static void InputCaptureChanged(DependencyObject target, DependencyPropertyChangedEventArgs e) {
-			var cntrl = target as BasicTerminalControl;
+			var cntrl = target as EasyTerminalControl;
 			cntrl.SetKBCaptureOptions();
 		}
 		private void SetKBCaptureOptions() {
+#if WPF
 			KeyboardNavigation.SetTabNavigation(this, InputCapture.HasFlag(INPUT_CAPTURE.TabKey) ? KeyboardNavigationMode.Contained : KeyboardNavigationMode.Continue);
 			KeyboardNavigation.SetDirectionalNavigation(this, InputCapture.HasFlag(INPUT_CAPTURE.DirectionKeys) ? KeyboardNavigationMode.Contained : KeyboardNavigationMode.Continue);
+#endif
 		}
 		/// <summary>
 		/// Helper property for setting KeyboardNavigation.Set*Navigation commands to prevent arrow keys or tabs from causing us to leave the control (aka pass through to conpty)
@@ -41,29 +70,34 @@ namespace ConPtyTermEmulatorLib {
 		[Description("Write only, sets the terminal theme"), Category("Common")]
 		public TerminalTheme? Theme { set => SetTheme(_Theme = value); private get => _Theme; }
 		private TerminalTheme? _Theme;
-		private void SetTheme(TerminalTheme? v) {if(v != null) Terminal?.SetTheme(v.Value, FontFamilyWhenSettingTheme.Source, (short) FontSizeWhenSettingTheme); }
-		
+		private void SetTheme(TerminalTheme? v) { if (v != null) Terminal?.SetTheme(v.Value, FontFamilyWhenSettingTheme.Source, (short)FontSizeWhenSettingTheme); }
+
 
 
 		[Description("Write only, When true user cannot give input through the Terminal UI (can still write to the Term from code behind using Term.WriteToTerm)"), Category("Common")]
 		public bool? IsReadOnly { set => SetReadOnly(_IsReadOnly = value); private get => _IsReadOnly; }
 		private bool? _IsReadOnly;
-		private void SetReadOnly(bool? v) { if (v != null) ConPTYTerm?.SetReadOnly(v.Value,false); }//no cursor auto update if user wants that they can use the separate dependency property for the cursor visibility
+		private void SetReadOnly(bool? v) { if (v != null) ConPTYTerm?.SetReadOnly(v.Value, false); }//no cursor auto update if user wants that they can use the separate dependency property for the cursor visibility
 
 		[Description("Write only, if the type cursor shows on the Terminal UI"), Category("Common")]
-		public bool? IsCursorVisible { set => SetCursor(_IsCursorVisible = value); private get => _IsCursorVisible;}
+		public bool? IsCursorVisible { set => SetCursor(_IsCursorVisible = value); private get => _IsCursorVisible; }
 		private bool? _IsCursorVisible;
 		private void SetCursor(bool? v) { if (v != null) ConPTYTerm?.SetCursorVisibility(v.Value); }
 
-
+		[Description("Direct access to the UI terminal control itself that handles rendering")]
 		public TerminalControl Terminal {
+#if WPF
 			get => (TerminalControl)GetValue(TerminalPropertyKey.DependencyProperty);
 			set => SetValue(TerminalPropertyKey, value);
+#else
+			get => (TerminalControl)GetValue(TerminalProperty);
+			set => SetValue(TerminalProperty, value);
+#endif
 		}
 
 		private static void OnTermChanged(DependencyObject target, DependencyPropertyChangedEventArgs e) {
-			var cntrl = (target as BasicTerminalControl);
-			var newTerm = e.NewValue as Term;
+			var cntrl = (target as EasyTerminalControl);
+			var newTerm = e.NewValue as TermPTY;
 			if (newTerm != null) {
 				if (cntrl.Terminal.IsLoaded)
 					cntrl.Terminal_Loaded(cntrl.Terminal, null);
@@ -77,13 +111,14 @@ namespace ConPtyTermEmulatorLib {
 		/// <summary>
 		/// Update the Term if you want to set to an existing
 		/// </summary>
-		public Term ConPTYTerm {
-			get => (Term)GetValue(ConPTYTermProperty);
+		[Description("The backend TermPTY connection allows changing the application the control is connected to")]
+		public TermPTY ConPTYTerm {
+			get => (TermPTY)GetValue(ConPTYTermProperty);
 			set => SetValue(ConPTYTermProperty, value);
 		}
 
 
-		public Term DisconnectConPTYTerm() {
+		public TermPTY DisconnectConPTYTerm() {
 			if (Terminal != null)
 				Terminal.Connection = null;
 			if (ConPTYTerm != null)
@@ -123,19 +158,31 @@ namespace ConPtyTermEmulatorLib {
 		private void InitializeComponent() {
 			Terminal = new();
 			ConPTYTerm = new();
-			Focusable = true;
-			Terminal.Focusable = true;
 			Terminal.AutoResize = true;
 			Terminal.Loaded += Terminal_Loaded;
 			var grid = new Grid() { };
 			grid.Children.Add(Terminal);
 			this.Content = grid;
+#if WPF
+			Focusable = true;
+			Terminal.Focusable = true;
 			this.GotFocus += (_, _) => Terminal.Focus();
+#else
+			this.GotFocus += (_, _) => Terminal.Focus(FocusState.Pointer);
+			IsTabStop = true;
+			//FocusManager.GotFocus += (o,e) => Debug.WriteLine($"FocusManager: {e.NewFocusedElement}");
+#endif
+
 		}
 
+#if WPF
+		void MainThreadRun(Action action) => Dispatcher.Invoke(action);
+#else
+		async void MainThreadRun(Action action) => await UWPHelpers.Enqueue(this.DispatcherQueue, action);
+#endif
 
 		private void Term_TermReady(object sender, EventArgs e) {
-			this.Dispatcher.Invoke(() => {
+			MainThreadRun(() => {
 				Terminal.Connection = ConPTYTerm;
 				ConPTYTerm.Win32DirectInputMode(Win32InputMode);
 				ConPTYTerm.Resize(Terminal.Columns, Terminal.Rows);//fix the size being partially off on first load
@@ -151,7 +198,7 @@ namespace ConPtyTermEmulatorLib {
 				return;
 			}
 			ConPTYTerm.TermReady += Term_TermReady;
-			this.Dispatcher.Invoke(() => {
+			MainThreadRun(() => {
 				var cmd = StartupCommandLine;//thread safety for dp
 				var term = ConPTYTerm;
 				var logOutput = LogConPTYOutput;
@@ -163,53 +210,35 @@ namespace ConPtyTermEmulatorLib {
 			SetTheme(Theme);
 			SetCursor(IsCursorVisible);
 			SetReadOnly(IsReadOnly);
-			Terminal.Focus();
+			//Terminal.Focus();
 			await Task.Delay(1000);
 			SetCursor(IsCursorVisible);
 		}
 
 		#region Depdendency Properties
-		public static readonly DependencyProperty InputCaptureProperty = DependencyProperty.Register(nameof(InputCapture), typeof(INPUT_CAPTURE), typeof(BasicTerminalControl), new
+		public static readonly DependencyProperty InputCaptureProperty = DependencyProperty.Register(nameof(InputCapture), typeof(INPUT_CAPTURE), typeof(EasyTerminalControl), new
 		PropertyMetadata(INPUT_CAPTURE.TabKey | INPUT_CAPTURE.DirectionKeys, InputCaptureChanged));
 
 		public static readonly DependencyProperty ThemeProperty = PropHelper.GenerateWriteOnlyProperty((c) => c.Theme);
-
-		protected static readonly DependencyPropertyKey TerminalPropertyKey = DependencyProperty.RegisterReadOnly(nameof(Terminal), typeof(TerminalControl), typeof(BasicTerminalControl), new PropertyMetadata());
-
+#if WPF
+		protected static readonly DependencyPropertyKey TerminalPropertyKey = DependencyProperty.RegisterReadOnly(nameof(Terminal), typeof(TerminalControl), typeof(EasyTerminalControl), new PropertyMetadata());
 		public static readonly DependencyProperty TerminalProperty = TerminalPropertyKey.DependencyProperty;
-		public static readonly DependencyProperty ConPTYTermProperty = DependencyProperty.Register(nameof(ConPTYTerm), typeof(Term), typeof(BasicTerminalControl), new(OnTermChanged));
-		public static readonly DependencyProperty StartupCommandLineProperty = DependencyProperty.Register(nameof(StartupCommandLine), typeof(string), typeof(BasicTerminalControl), new PropertyMetadata("powershell.exe"));
+#else
+		public static readonly DependencyProperty TerminalProperty = DependencyProperty.Register(nameof(Terminal), typeof(TerminalControl), typeof(EasyTerminalControl), new PropertyMetadata(null));
+#endif
+		public static readonly DependencyProperty ConPTYTermProperty = DependencyProperty.Register(nameof(ConPTYTerm), typeof(TermPTY), typeof(EasyTerminalControl), new(null, OnTermChanged));
+		public static readonly DependencyProperty StartupCommandLineProperty = DependencyProperty.Register(nameof(StartupCommandLine), typeof(string), typeof(EasyTerminalControl), new PropertyMetadata("powershell.exe"));
 
-		public static readonly DependencyProperty LogConPTYOutputProperty = DependencyProperty.Register(nameof(LogConPTYOutput), typeof(bool), typeof(BasicTerminalControl), new PropertyMetadata(false));
-		public static readonly DependencyProperty Win32InputModeProperty = DependencyProperty.Register(nameof(Win32InputMode), typeof(bool), typeof(BasicTerminalControl), new PropertyMetadata(true));
+		public static readonly DependencyProperty LogConPTYOutputProperty = DependencyProperty.Register(nameof(LogConPTYOutput), typeof(bool), typeof(EasyTerminalControl), new PropertyMetadata(false));
+		public static readonly DependencyProperty Win32InputModeProperty = DependencyProperty.Register(nameof(Win32InputMode), typeof(bool), typeof(EasyTerminalControl), new PropertyMetadata(true));
 		public static readonly DependencyProperty IsReadOnlyProperty = PropHelper.GenerateWriteOnlyProperty((c) => c.IsReadOnly);
 		public static readonly DependencyProperty IsCursorVisibleProperty = PropHelper.GenerateWriteOnlyProperty((c) => c.IsCursorVisible);
 
-		public static readonly DependencyProperty FontFamilyWhenSettingThemeProperty = DependencyProperty.Register(nameof(FontFamilyWhenSettingTheme), typeof(FontFamily), typeof(BasicTerminalControl), new PropertyMetadata(new FontFamily("Cascadia Code")));
+		public static readonly DependencyProperty FontFamilyWhenSettingThemeProperty = DependencyProperty.Register(nameof(FontFamilyWhenSettingTheme), typeof(FontFamily), typeof(EasyTerminalControl), new PropertyMetadata(new FontFamily("Cascadia Code")));
 
-		public static readonly DependencyProperty FontSizeWhenSettingThemeProperty = DependencyProperty.Register(nameof(FontSizeWhenSettingTheme), typeof(int), typeof(BasicTerminalControl), new PropertyMetadata(12));
+		public static readonly DependencyProperty FontSizeWhenSettingThemeProperty = DependencyProperty.Register(nameof(FontSizeWhenSettingTheme), typeof(int), typeof(EasyTerminalControl), new PropertyMetadata(12));
 
-		private class PropHelper : DepPropHelper<BasicTerminalControl> { }
-		private class DepPropHelper<CONTROL_TYPE> where CONTROL_TYPE : UserControl {
-			protected DepPropHelper() => throw new Exception("Should not be instanced");
-			public static DependencyProperty GenerateWriteOnlyProperty<PROP_TYPE>(Expression<Func<CONTROL_TYPE, PROP_TYPE>> PropToSet) {
-
-				var me = PropToSet.Body as MemberExpression;
-				if (me == null)
-					throw new ArgumentException(nameof(PropToSet));
-				var propName = me.Member.Name;
-				var prop = typeof(CONTROL_TYPE).GetProperty(me.Member.Name, BindingFlags.Instance | BindingFlags.Public);
-
-				if (prop == null)
-					throw new ArgumentException(nameof(PropToSet));
-
-				return DependencyProperty.Register(propName, typeof(PROP_TYPE), typeof(CONTROL_TYPE), new FrameworkPropertyMetadata(null, (target, value) => CoerceReadOnlyHandle(prop.SetMethod, target, value)));
-			}
-			private static object CoerceReadOnlyHandle(MethodInfo SetMethod, DependencyObject target, object value) {
-				SetMethod.Invoke(target, new object[] { value });
-				return null;
-			}
-		}
+		private class PropHelper : DepPropHelper<EasyTerminalControl> { }
 
 		#endregion
 	}

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net6.0-windows;net8.0-windows</TargetFrameworks>
+		<PlatformTarget>x64</PlatformTarget>
+		<Platforms>x64</Platforms>
+		<UseWpf>true</UseWpf>
+		<Version>1.0.18</Version>
+	</PropertyGroup>
+
+	<PropertyGroup>
+	  <DefineConstants>$(DefineConstants);WPF</DefineConstants>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Remove="NativeMethods.txt" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CI.Microsoft.Terminal.Wpf" Version="1.22.250204002" />
+		<PackageReference Include="CI.Microsoft.Windows.Console.ConPTY" Version="1.22.250314001" />
+		<PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.106">
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+	</ItemGroup>
+
+
+
+</Project>

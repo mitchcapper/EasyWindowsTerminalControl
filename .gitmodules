@@ -1,0 +1,7 @@
+[submodule "external/Terminal"]
+	path = external/Terminal
+	url = https://github.com/microsoft/terminal
+	shallow = true
+	sparse-checkout = src/cascadia/WpfTerminalControl
+	fetchRecurseSubmodules = false
+	

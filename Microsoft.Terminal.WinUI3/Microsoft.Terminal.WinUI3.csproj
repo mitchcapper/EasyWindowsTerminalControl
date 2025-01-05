@@ -1,0 +1,128 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<RootNamespace>Microsoft.Terminal.WinUI3</RootNamespace>
+		<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+		<UseWinUI>true</UseWinUI>
+		<Platforms>AnyCPU;x64</Platforms>
+		<PackageId>CI.$(AssemblyName).Unofficial</PackageId>
+		<BeforePack>CollectNativePackContents</BeforePack>
+		<Authors>MitchCapper</Authors>
+		<PackageProjectUrl>https://github.com/MitchCapper/EasyWindowsTerminalControl</PackageProjectUrl>
+		<Version>1.0.1-beta.1</Version>
+		<Description>This is an unofficial WinUI3 recreation of the official Microsoft.Terminal.WPF package.  Highly recommend using this with the "EasyWindowsTerminalControl.WinUI".</Description>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Include="..\external\terminal\src\cascadia\WpfTerminalControl\ITerminalConnection.cs" Link="external\ITerminalConnection.cs" />
+		<Compile Include="..\external\terminal\src\cascadia\WpfTerminalControl\NativeMethods.cs" Link="external\NativeMethods.cs" />
+		<Compile Include="..\external\terminal\src\cascadia\WpfTerminalControl\TerminalOutputEventArgs.cs" Link="external\TerminalOutputEventArgs.cs" />
+		<Compile Include="..\external\terminal\src\cascadia\WpfTerminalControl\TerminalTheme.cs" Link="external\TerminalTheme.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="CI.Microsoft.Windows.Console.ConPTY" Version="1.22.250314001" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.106">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.241114003" />
+		<PackageReference Include="WinUIEx" Version="2.5.0" />
+		<PackageReference Include="CI.Microsoft.Terminal.Wpf" GeneratePathProperty="true" ExcludeAssets="all" Version="1.22.250204002" />
+		<!--<PackageReference Include="CI.Microsoft.Terminal.Wpf" Version="1.22.250204002" ExcludeAssets="all" />-->
+	</ItemGroup>
+	
+	<ItemGroup>
+		<Page Update="TerminalControl.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<!--<Target Name="CopyCustomContent" AfterTargets="AfterBuild">
+		<Copy SourceFiles="$(CI_Microsoft_Terminal_Wpf)\runtimes\win-x64\native\*" DestinationFolder="$(OutDir)" />
+	</Target>-->
+
+	<PropertyGroup>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	</PropertyGroup>
+	<!--<PropertyGroup>
+		<DisableTransitiveFrameworkReferenceDownloads>true</DisableTransitiveFrameworkReferenceDownloads>
+		<DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+		-->
+	<!--<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>-->
+	<!--
+
+	</PropertyGroup>-->
+	<ItemGroup>
+		<Content Include="runtimes\**\*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<PackagePath>runtimes</PackagePath>
+		</Content>
+	</ItemGroup>
+	<ItemGroup>
+	  <None Update="TerminalControl.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </None>
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="build\" />
+	</ItemGroup>
+	<Target Name="RemoveWpfFrameworkReference" AfterTargets="AddTransitiveFrameworkReferences">
+		<ItemGroup>
+			<FrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
+		</ItemGroup>
+	</Target>
+	<!--<ItemGroup>
+		<CustomPackageFile Include="bin\x64\Debug\net8.0-windows10.0.19041.0\Microsoft.Terminal.WinUI3\TerminalControl.xbf">
+			<PackagePath>lib\net8.0-windows10.0.19041.0\Microsoft.Terminal.WinUI3</PackagePath>
+		</CustomPackageFile>
+	</ItemGroup>-->
+	
+	<!--<Target Name="MergePGOCounts" />-->
+	<Target Name="CollectNativePackContents">
+		<ItemGroup>
+			<None Include="$(PkgCI_Microsoft_Terminal_Wpf)\runtimes\win-x86\native\Microsoft.Terminal.Control.dll">
+				<Pack>true</Pack>
+				<PackagePath>runtimes\win-x86\native\</PackagePath>
+			</None>
+			<None Include="$(PkgCI_Microsoft_Terminal_Wpf)\runtimes\win-x64\native\Microsoft.Terminal.Control.dll">
+				<Pack>true</Pack>
+				<PackagePath>runtimes\win-x64\native\</PackagePath>
+			</None>
+			<None Include="$(PkgCI_Microsoft_Terminal_Wpf)\runtimes\win-arm64\native\Microsoft.Terminal.Control.dll">
+				<Pack>true</Pack>
+				<PackagePath>runtimes\win-arm64\native\</PackagePath>
+			</None>
+			<None Include="bin\x64\Debug\net8.0-windows10.0.19041.0\Microsoft.Terminal.WinUI3\TerminalControl.xbf">
+				<Pack>true</Pack>
+				<PackagePath>lib\net8.0-windows10.0.19041\Microsoft.Terminal.WinUI3</PackagePath>
+			</None>
+		</ItemGroup>
+		<ItemGroup>
+			<None Include="build\CI.Microsoft.Terminal.WinUI3.Unofficial.targets">
+				<Pack>true</Pack>
+				<PackagePath>build</PackagePath>
+			</None>
+			<!-- Also include in buildTransitive for transitive package references -->
+			<None Include="build\CI.Microsoft.Terminal.WinUI3.Unofficial.targets">
+				<Pack>true</Pack>
+				<PackagePath>buildTransitive</PackagePath>
+			</None>
+		</ItemGroup>
+	</Target>
+	<!--<Target Name="CollectNativePackContents">
+		<ItemGroup>
+			<None Include="lib_bins\runtimes\win-x86\Microsoft.Terminal.Control.dll">
+				<Pack>true</Pack>
+				<PackagePath>runtimes\win-x86\native\</PackagePath>
+			</None>
+			<None Include="lib_bins\runtimes\win-x64\Microsoft.Terminal.Control.dll">
+				<Pack>true</Pack>
+				<PackagePath>runtimes\win-x64\native\</PackagePath>
+			</None>
+			<None Include="lib_bins\runtimes\win-arm64\Microsoft.Terminal.Control.dll">
+				<Pack>true</Pack>
+				<PackagePath>runtimes\win-arm64\native\</PackagePath>
+			</None>
+		</ItemGroup>
+	</Target>-->
+</Project>

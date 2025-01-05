@@ -3,12 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:TermExample" xmlns:term="clr-namespace:ConPtyTermEmulatorLib;assembly=ConPtyTermEmulatorLib"
+        xmlns:local="clr-namespace:TermExample" xmlns:term="clr-namespace:EasyWindowsTerminalControl;assembly=EasyWindowsTerminalControl"
 		mc:Ignorable="d"
 		Background="{Binding BackroundColorBrush}"
         Title="ProcessOutput" Height="650" Width="1200">
     <Grid>
-		<term:BasicTerminalControl x:Name="basicTermControl" IsReadOnly="True"  IsCursorVisible="False" Theme="{Binding Theme}"
+		<term:EasyTerminalControl x:Name="basicTermControl" IsReadOnly="True"  IsCursorVisible="False" Theme="{Binding Theme}"
 								  StartupCommandLine="{Binding StartupCommand}"
 								   FontFamilyWhenSettingTheme="Consolas" Margin="0,0,0,30" Win32InputMode="False"  />
 		<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">

@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33417.168
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TermExample", "TermExample\TermExample.csproj", "{640EBCC2-B7B8-416D-B6B4-D484D1D404BB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EasyWindowsTerminalControl", "EasyWindowsTerminalControl\EasyWindowsTerminalControl.csproj", "{8DBC2368-E247-4930-B51D-23F2EB59C524}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Terminal.WinUI3", "Microsoft.Terminal.WinUI3\Microsoft.Terminal.WinUI3.csproj", "{EAE4A2C3-203E-43DD-BADE-63611B1489DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyWindowsTerminalControl.WinUI", "EasyWindowsTerminalControl.WinUI\EasyWindowsTerminalControl.WinUI.csproj", "{0DC813BE-F9B4-43BC-9F5B-E4A50FD86CB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TermExample.WinUI", "TermExample.WinUI\TermExample.WinUI.csproj", "{63F66283-5142-4B8E-BF28-FF434AF08B0B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{640EBCC2-B7B8-416D-B6B4-D484D1D404BB}.Debug|x64.ActiveCfg = Debug|x64
+		{640EBCC2-B7B8-416D-B6B4-D484D1D404BB}.Debug|x64.Build.0 = Debug|x64
+		{640EBCC2-B7B8-416D-B6B4-D484D1D404BB}.Release|x64.ActiveCfg = Release|x64
+		{640EBCC2-B7B8-416D-B6B4-D484D1D404BB}.Release|x64.Build.0 = Release|x64
+		{8DBC2368-E247-4930-B51D-23F2EB59C524}.Debug|x64.ActiveCfg = Debug|x64
+		{8DBC2368-E247-4930-B51D-23F2EB59C524}.Debug|x64.Build.0 = Debug|x64
+		{8DBC2368-E247-4930-B51D-23F2EB59C524}.Release|x64.ActiveCfg = Release|x64
+		{8DBC2368-E247-4930-B51D-23F2EB59C524}.Release|x64.Build.0 = Release|x64
+		{EAE4A2C3-203E-43DD-BADE-63611B1489DF}.Debug|x64.ActiveCfg = Debug|x64
+		{EAE4A2C3-203E-43DD-BADE-63611B1489DF}.Debug|x64.Build.0 = Debug|x64
+		{EAE4A2C3-203E-43DD-BADE-63611B1489DF}.Release|x64.ActiveCfg = Release|Any CPU
+		{EAE4A2C3-203E-43DD-BADE-63611B1489DF}.Release|x64.Build.0 = Release|Any CPU
+		{0DC813BE-F9B4-43BC-9F5B-E4A50FD86CB6}.Debug|x64.ActiveCfg = Debug|x64
+		{0DC813BE-F9B4-43BC-9F5B-E4A50FD86CB6}.Debug|x64.Build.0 = Debug|x64
+		{0DC813BE-F9B4-43BC-9F5B-E4A50FD86CB6}.Release|x64.ActiveCfg = Release|Any CPU
+		{0DC813BE-F9B4-43BC-9F5B-E4A50FD86CB6}.Release|x64.Build.0 = Release|Any CPU
+		{63F66283-5142-4B8E-BF28-FF434AF08B0B}.Debug|x64.ActiveCfg = Debug|x64
+		{63F66283-5142-4B8E-BF28-FF434AF08B0B}.Debug|x64.Build.0 = Debug|x64
+		{63F66283-5142-4B8E-BF28-FF434AF08B0B}.Debug|x64.Deploy.0 = Debug|x64
+		{63F66283-5142-4B8E-BF28-FF434AF08B0B}.Release|x64.ActiveCfg = Release|x64
+		{63F66283-5142-4B8E-BF28-FF434AF08B0B}.Release|x64.Build.0 = Release|x64
+		{63F66283-5142-4B8E-BF28-FF434AF08B0B}.Release|x64.Deploy.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {94BA1E45-9BBB-4F9C-8041-98596F25CA05}
+	EndGlobalSection
+EndGlobal

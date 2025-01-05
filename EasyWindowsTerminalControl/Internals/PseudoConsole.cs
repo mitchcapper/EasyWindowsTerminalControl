@@ -1,14 +1,11 @@
-
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Windows.Win32;
-using Windows.Win32.Foundation;
 using Windows.Win32.System.Console;
 
-namespace ConPtyTermEmulatorLib {
+namespace EasyWindowsTerminalControl.Internals {
 	/// <summary>
 	/// Utility functions around the new Pseudo Console APIs.
 	/// </summary>
@@ -17,8 +14,13 @@ namespace ConPtyTermEmulatorLib {
 		public bool IsDisposed => disposed;
 		internal ConPtyClosePseudoConsoleSafeHandle Handle { get; }
 
+		/// <summary>
+		/// Required for any 3rd parties trying to implement their own process creation
+		/// </summary>
+		public IntPtr GetDangerousHandle => Handle.DangerousGetHandle();
+
 		private PseudoConsole(ConPtyClosePseudoConsoleSafeHandle handle) {
-			this.Handle = handle;
+			Handle = handle;
 		}
 		public void Resize(int width, int height) {
 			PseudoConsoleApi.ResizePseudoConsole(Handle.DangerousGetHandle(), new COORD { X = (short)width, Y = (short)height });
@@ -32,12 +34,18 @@ namespace ConPtyTermEmulatorLib {
 			}
 		}
 		public static PseudoConsole Create(SafeFileHandle inputReadSide, SafeFileHandle outputWriteSide, int width, int height) {
+			if (width == 0 || height == 0){
+				Debug.WriteLine($"PseudoConsole Create called with 0 width height");
+				width = 80;
+				height=30;
+			}
 			var createResult = PseudoConsoleApi.CreatePseudoConsole(
 				new COORD { X = (short)width, Y = (short)height },
 				inputReadSide, outputWriteSide,
 			   0, out IntPtr hPC);
 			if (createResult != 0) {
-				throw new Win32Exception(createResult, "Could not create pseudo console.");
+				throw new Win32Exception(createResult);
+				//throw new Win32Exception(createResult, "Could not create pseudo console.");
 			}
 			return new PseudoConsole(new ConPtyClosePseudoConsoleSafeHandle(hPC));
 		}
@@ -47,7 +55,7 @@ namespace ConPtyTermEmulatorLib {
 				if (disposing) {
 					Handle.Dispose();
 				}
-				
+
 				// TODO: set large fields to null
 				disposed = true;
 			}

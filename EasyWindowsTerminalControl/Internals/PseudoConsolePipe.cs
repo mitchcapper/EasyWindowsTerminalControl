@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Windows.Win32;
 
-namespace ConPtyTermEmulatorLib {
+namespace EasyWindowsTerminalControl.Internals {
 	/// <summary>
 	/// A pipe used to talk to the pseudoconsole, as described in:
 	/// https://docs.microsoft.com/en-us/windows/console/creating-a-pseudoconsole-session

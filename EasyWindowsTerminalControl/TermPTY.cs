@@ -6,20 +6,25 @@ using Windows.Win32;
 using System.Threading.Tasks;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
-using System.Threading;
+using EasyWindowsTerminalControl.Internals;
 
-namespace ConPtyTermEmulatorLib {
+namespace EasyWindowsTerminalControl {
 	/// <summary>
 	/// Class for managing communication with the underlying console, and communicating with its pseudoconsole.
 	/// </summary>
-	public class Term : ITerminalConnection {
-
+	public class TermPTY : ITerminalConnection {
+		protected class InternalProcessFactory : IProcessFactory {
+			public IProcess Start(string command, nuint attributes, PseudoConsole console) => ProcessFactory.Start(command, attributes, console);
+		}
+#if WPF
 		private static bool IsDesignMode = System.ComponentModel.DesignerProperties.GetIsInDesignMode(new System.Windows.DependencyObject());
+#else
+		private static bool IsDesignMode = false; // no designer no need to detect:)
+#endif
 		private SafeFileHandle _consoleInputPipeWriteHandle;
 		private StreamWriter _consoleInputWriter;
 		private BinaryWriter _consoleInputWriterB;
-		public Term(int READ_BUFFER_SIZE = 1024 * 16, bool USE_BINARY_WRITER = false) {
+		public TermPTY(int READ_BUFFER_SIZE = 1024 * 16, bool USE_BINARY_WRITER = false, IProcessFactory ProcessFactory = null) {
 			this.READ_BUFFER_SIZE = READ_BUFFER_SIZE;
 			this.USE_BINARY_WRITER = USE_BINARY_WRITER;
 		}
@@ -54,9 +59,12 @@ namespace ConPtyTermEmulatorLib {
 		/// <param name="command">the command to run, e.g. cmd.exe</param>
 		/// <param name="consoleHeight">The height (in characters) to start the pseudoconsole with. Defaults to 80.</param>
 		/// <param name="consoleWidth">The width (in characters) to start the pseudoconsole with. Defaults to 30.</param>
-		public void Start(string command, int consoleWidth = 80, int consoleHeight = 30, bool logOutput = false) {
+		/// <param name="logOutput">Whether to log the output of the console to a file. Defaults to false.</param>
+		/// <param name="factory">While not recommended, you can provide your own process factory for more granular control over process creation</param>
+		public void Start(string command, int consoleWidth = 80, int consoleHeight = 30, bool logOutput = false, IProcessFactory factory = null) {
 			if (Process != null)
 				throw new Exception("Called Start on ConPTY term after already started");
+			factory ??= new InternalProcessFactory();
 			if (IsDesignMode) {
 				TermProcIsStarted = true;
 				TermReady?.Invoke(this, EventArgs.Empty);
@@ -67,7 +75,7 @@ namespace ConPtyTermEmulatorLib {
 			using (var inputPipe = new PseudoConsolePipe())
 			using (var outputPipe = new PseudoConsolePipe())
 			using (var pseudoConsole = PseudoConsole.Create(inputPipe.ReadSide, outputPipe.WriteSide, consoleWidth, consoleHeight))
-			using (var process = ProcessFactory.Start(command, PInvoke.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, pseudoConsole)) {
+			using (var process = factory.Start(command, PInvoke.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, pseudoConsole)) {
 				Process = process;
 				TheConsole = pseudoConsole;
 				// copy all pseudoconsole output to a FileStream and expose it to the rest of the app
@@ -87,13 +95,13 @@ namespace ConPtyTermEmulatorLib {
 				ReadOutputLoop();
 				OnClose(() => DisposeResources(process, pseudoConsole, outputPipe, inputPipe, _consoleInputWriter));
 
-				process.Process.WaitForExit();
+				process.WaitForExit();
 				WriteToUITerminal("Session Terminated");
 
 				TheConsole.Dispose();
 			}
 		}
-		public ProcessFactory.WrappedProcess Process;
+		public IProcess Process { get; protected set; }
 		PseudoConsole TheConsole;
 		/// <summary>
 		/// Sends the given string to the anonymous pipe that writes to the active pseudoconsole.
@@ -106,7 +114,6 @@ namespace ConPtyTermEmulatorLib {
 				return;
 			if (_consoleInputWriter == null && _consoleInputWriterB == null)
 				throw new InvalidOperationException("There is no writer attached to a pseudoconsole. Have you called Start on this instance yet?");
-			//Debug.WriteLine($"Term.cs WriteToTerm writing: {input.ToString().Replace("\n", "\n\t").Trim()}");
 			if (!USE_BINARY_WRITER)
 				_consoleInputWriter.Write(input);
 			else
@@ -132,8 +139,8 @@ namespace ConPtyTermEmulatorLib {
 			_consoleInputWriterB = null;
 		}
 		public void StopExternalTermOnly() {
-			if (Process?.Process?.HasExited != false) return;
-			Process.Process?.Kill();
+			if (Process?.HasExited != false) return;
+			Process.Kill();
 		}
 		/// <summary>
 		/// Set a callback for when the terminal is closed (e.g. via the "X" window decoration button).
@@ -203,17 +210,16 @@ namespace ConPtyTermEmulatorLib {
 			ReadLoopStarted = true;
 			// We have a few ways to handle the buffer with a delimiter but given the size of the buffer and the fairly cheap cost of copying, the ability to let the span be modified before passing it on, we will just copy any parts before the next delimiter to the start of the buffer when reaching the end.
 			using (StreamReader reader = new StreamReader(ConsoleOutStream)) {
-				ReadState state = new() { entireBuffer=new char[READ_BUFFER_SIZE]};
+				ReadState state = new() { entireBuffer = new char[READ_BUFFER_SIZE] };
 
 				state.curBuffer = state.entireBuffer.Slice(0);
-				var empty = Span<char>.Empty;
 
 				while ((state.readChars = reader.Read(state.curBuffer)) != 0) {
 					//					Debug.WriteLine($"Read: {read}");
 
 					var sendSpan = HandleRead(ref state);
 
-					if (sendSpan != empty) {
+					if (!sendSpan.IsEmpty) {
 						InterceptOutputToUITerminal?.Invoke(ref sendSpan);
 						if (sendSpan.Length > 0) {
 							var str = sendSpan.ToString();

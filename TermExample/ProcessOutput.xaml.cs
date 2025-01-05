@@ -13,7 +13,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ConPtyTermEmulatorLib;
+using EasyWindowsTerminalControl;
 using Microsoft.Terminal.Wpf;
 using Microsoft.Win32;
 
@@ -23,15 +23,14 @@ namespace TermExample {
 	/// </summary>
 	public partial class ProcessOutput : Window {
 		/*
-		This demo uses the highlight syntax highlight generator to highlight files and put to the console.   You need highlight version 4.6 or greater which if not released you can download a CI build from: https://github.com/mitchcapper/WIN64LinuxBuild/actions/workflows/tool_builds.yml 
+		This demo uses the highlight syntax highlight generator to highlight files and put to the console.   You need highlight version 4.6 or greater which has been released! see http://andre-simon.de/zip/download.php download and unzip the x64 version somewhere and set highlight path to it
 		*/
 		public ProcessOutput() {
 			DataContext = new DataBinds();
 			InitializeComponent();
-			basicTermControl.ConPTYTerm = new ReadDelimitedTerm(delimiter:USE_DELIMITER);
-			Loaded += ProcessOutput_Loaded;
+			basicTermControl.ConPTYTerm = new ReadDelimitedTermPTY(delimiter:USE_DELIMITER);
 		}
-		public const string HIGHLIGHT_PATH = @"ci\highlight\bin\highlight.exe";
+		public const string HIGHLIGHT_PATH = @"highlight.exe";
 		public class DataBinds : INotifyPropertyChanged {
 			public void TriggerPropChanged(string prop) => PropertyChanged?.Invoke(this,new PropertyChangedEventArgs(prop));
 			
@@ -46,19 +45,12 @@ namespace TermExample {
 				DefaultBackground = ColorToVal(BackroundColor),
 				DefaultForeground = ColorToVal(Colors.LightYellow),
 				DefaultSelectionBackground = 0xcccccc,
-				SelectionBackgroundAlpha = 0.5f,
+				//SelectionBackgroundAlpha = 0.5f,
 				CursorStyle = CursorStyle.BlinkingBar,
 				ColorTable = new uint[] { 0x0C0C0C, 0x1F0FC5, 0x0EA113, 0x009CC1, 0xDA3700, 0x981788, 0xDD963A, 0xCCCCCC, 0x767676, 0x5648E7, 0x0CC616, 0xA5F1F9, 0xFF783B, 0x9E00B4, 0xD6D661, 0xF2F2F2 },
 			};
 		}
 
-		private async void ProcessOutput_Loaded(object sender, RoutedEventArgs e) {
-			basicTermControl.ConPTYTerm.InterceptOutputToUITerminal += OurInterceptUI;
-		}
-
-		private void OurInterceptUI(ref Span<char> str) {
-			Debug.WriteLine($"OurIntercept called sending to the term: {str}");
-		}
 
 		private const string USE_DELIMITER = "__NOTINMYFILES__";
 		private const char FILE_SEPARATOR = '\a';
@@ -80,9 +72,6 @@ namespace TermExample {
 				await Task.Delay(500);
 			}
 
-			
-			
-			
 			var writeStr = $"syntax={Path.GetFileName(fileName)};tag={USE_DELIMITER};line-length={basicTermControl.Terminal.Columns};eof={FILE_SEPARATOR}\n{txt}\n{FILE_SEPARATOR}\n";
 			writeStr = writeStr.Replace("\r", "").Replace("\n", "\r");
 			startTime = DateTime.Now;
@@ -95,8 +84,7 @@ namespace TermExample {
 		private void CloseSTDINClicked(object sender, RoutedEventArgs e) {
 			basicTermControl.ConPTYTerm.CloseStdinToApp();
 		}
-		private bool directToggle = true;
-		private async void ClearConsoleHard(object sender, RoutedEventArgs e) {
+		private void ClearConsoleHard(object sender, RoutedEventArgs e) {
 			basicTermControl.ConPTYTerm.ClearUITerminal(true);
         }
 

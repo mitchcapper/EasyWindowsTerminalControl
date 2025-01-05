@@ -3,24 +3,28 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:TermExample" xmlns:term="clr-namespace:ConPtyTermEmulatorLib;assembly=ConPtyTermEmulatorLib"
+        xmlns:local="clr-namespace:TermExample" xmlns:term="clr-namespace:EasyWindowsTerminalControl;assembly=EasyWindowsTerminalControl"
 		mc:Ignorable="d" Background="{Binding BackroundColorBrush}"
         Title="Sample Term" Height="550" Width="1200">
 	<Grid>
-		<term:BasicTerminalControl x:Name="basicTermControl" StartupCommandLine="{Binding StartupCommand}" Theme="{Binding Theme, Mode=OneWay}" FontFamilyWhenSettingTheme="Consolas" LogConPTYOutput="True" Margin="0,0,0,30" Win32InputMode="True" InputCapture="TabKey,DirectionKeys" >
-			<term:BasicTerminalControl.Resources>
+		<Grid.RowDefinitions>
+			<RowDefinition/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+		<term:EasyTerminalControl x:Name="basicTermControl" StartupCommandLine="{Binding StartupCommand}" Theme="{Binding Theme, Mode=OneWay}" FontFamilyWhenSettingTheme="Consolas" LogConPTYOutput="True"  Win32InputMode="True" InputCapture="TabKey,DirectionKeys" >
+			<term:EasyTerminalControl.Resources>
 				<Style TargetType="ScrollBar" BasedOn="{StaticResource {x:Type ScrollBar}}">
 					<!--Lazy Theming-->
 					<Setter Property="Opacity" Value="0.7"/>
 				</Style>
-			</term:BasicTerminalControl.Resources>
-		</term:BasicTerminalControl>
+			</term:EasyTerminalControl.Resources>
+		</term:EasyTerminalControl>
 		
-		<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"  >
+		<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="1"  >
 			<Button Content="Duplicate New" Click="DuplicateClicked" Margin="5" />
-			<Button Content="Clear Term" Click="ClearBufferClicked" Margin="5" />
+			<Button Content="Clear Term" Click="ClearTermClicked" Margin="5" />
 			<Button Content="Show Buffer" Click="ShowBufferClicked" Margin="5" />
-			<!--<Button Content="Process Output Sample" Click="ShowProcessOutputClicked" Margin="5" />-->
+			<Button Content="Process Output Sample" Click="ShowProcessOutputClicked" Margin="5" />
 		</StackPanel>
 	</Grid>
 </Window>

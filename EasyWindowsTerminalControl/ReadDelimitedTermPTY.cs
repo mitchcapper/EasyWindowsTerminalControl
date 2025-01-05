@@ -1,27 +1,32 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace ConPtyTermEmulatorLib {
+namespace EasyWindowsTerminalControl {
 	/// <summary>
 	/// terminal that will only output text after a specific delimiter is hit and will remove the delmiter
 	/// </summary>
-	public class ReadDelimitedTerm : Term {
-		public ReadDelimitedTerm(int READ_BUFFER_SIZE = 1024 * 16, bool USE_BINARY_WRITER=false, ReadOnlySpan<char> delimiter=default, TimeSpan MaxWaitTimeoutForDelimiter = default) : base(READ_BUFFER_SIZE,USE_BINARY_WRITER) {
+	public class ReadDelimitedTermPTY : TermPTY {
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="READ_BUFFER_SIZE"></param>
+		/// <param name="USE_BINARY_WRITER"></param>
+		/// <param name="delimiter"></param>
+		/// <param name="MaxWaitTimeoutForDelimiter">Maximum time to buffer output waiting for a delimiter since the last delimiter was seen. Once this time passes the entire buffer is sent on the next output.</param>
+		public ReadDelimitedTermPTY(int READ_BUFFER_SIZE = 1024 * 16, bool USE_BINARY_WRITER=false, ReadOnlySpan<char> delimiter=default, TimeSpan MaxWaitTimeoutForDelimiter = default) : base(READ_BUFFER_SIZE,USE_BINARY_WRITER) {
 			if (delimiter != default)
 				SetReadOutputDelimiter(delimiter, MaxWaitTimeoutForDelimiter);
 		}
 
 		override protected Span<char> HandleRead(ref ReadState state) {
-			var sendSpan = Span<Char>.Empty;
+			var sendSpan = Span<char>.Empty;
 			curBufferOffset += state.readChars;
 			var working = state.entireBuffer.Slice(lastDelimEndOffset, curBufferOffset - lastDelimEndOffset);
 			var delimPos = working.LastIndexOf(delimiter);
 			if (delimPos != -1) {
 				sendSpan = working.Slice(0, delimPos);
 				lastDelimEndOffset += delimPos + delimiter.Length;
+				if (delimiterTimeout != default)
+					lastDelimiterSeen = DateTime.Now;
 			}
 			state.curBuffer = state.entireBuffer.Slice(curBufferOffset);
 			if (state.curBuffer.Length == 0) {
@@ -44,11 +49,18 @@ namespace ConPtyTermEmulatorLib {
 				}
 				state.curBuffer = state.entireBuffer.Slice(curBufferOffset);
 			}
+			if (sendSpan.IsEmpty && delimiterTimeout != default && lastDelimiterSeen != default){
+				if ((DateTime.Now - lastDelimiterSeen) > delimiterTimeout){
+					sendSpan = state.entireBuffer;
+					curBufferOffset = lastDelimEndOffset = 0;
+					lastDelimiterSeen = DateTime.Now;
+				}
+			}
 			return sendSpan;
 		}
 
-		private int curBufferOffset = 0; //where in the entirebuffer does the current buffer to read into start
-		private	int lastDelimEndOffset = 0; //where in the entirebuffer did the last delimiter end should always be <= curBufferOffset, the data between here and curBufferOffset is what is still valid data needing to be sent.
+		protected int curBufferOffset = 0; //where in the entirebuffer does the current buffer to read into start
+		protected int lastDelimEndOffset = 0; //where in the entirebuffer did the last delimiter end should always be <= curBufferOffset, the data between here and curBufferOffset is what is still valid data needing to be sent.
 
 
 		/// <summary>
@@ -56,13 +68,14 @@ namespace ConPtyTermEmulatorLib {
 		/// Note: Delimiter itself is not ever passed
 		/// </summary>
 		/// <param name="delimiter"></param>
-		/// <param name="MaxWaitForDelimiter"></param>
+		/// <param name="MaxWaitForDelimiter">Maximum time to buffer output waiting for a delimiter since the last delimiter was seen. Once this time passes the entire buffer is sent on the next output.</param>
 		public void SetReadOutputDelimiter(ReadOnlySpan<char> delimiter, TimeSpan MaxWaitTimeoutForDelimiter = default) {
 			this.delimiter = delimiter.ToArray();
 			delimiterTimeout = MaxWaitTimeoutForDelimiter;
 		}
-		private char[] delimiter;
-		private TimeSpan delimiterTimeout;
+		protected char[] delimiter;
+		protected TimeSpan delimiterTimeout;
+		protected DateTime lastDelimiterSeen;
 
 	}
 }
