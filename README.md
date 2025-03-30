@@ -9,7 +9,9 @@ Technically you could use the control simply as ANSI render frontend if you need
 
 <!-- MarkdownTOC -->
 
+- [Disclaimer](#disclaimer)
 - [Usage](#usage)
+- [WinUI3 Support](#winui3-support)
 - [Control Properties](#control-properties)
 - [Methods](#methods)
 	- [EasyTerminalControl](#easyterminalcontrol)
