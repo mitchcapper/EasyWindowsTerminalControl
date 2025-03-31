@@ -1,5 +1,11 @@
 # EasyWindowsTerminalControl
+[![Build](https://github.com/mitchcapper/EasyWindowsTerminalControl/actions/workflows/build.yaml/badge.svg)](https://github.com/mitchcapper/EasyWindowsTerminalControl/actions/workflows/build.yaml)
+[![EasyWindowsTerminalControl](https://img.shields.io/nuget/v/EasyWindowsTerminalControl.svg?style=flat&label=EasyWindowsTerminalControl)](https://www.nuget.org/packages/EasyWindowsTerminalControl/)
+[![EasyWindowsTerminalControl.WinUI](https://img.shields.io/nuget/v/EasyWindowsTerminalControl.WinUI.svg?style=flat&label=EasyWindowsTerminalControl.WinUI)](https://www.nuget.org/packages/EasyWindowsTerminalControl.WinUI/)
+
 A high performance full-feature WPF / (winui3* beta) terminal control that uses the [Official Windows Terminal](https://github.com/microsoft/terminal) console host for the backend driver.
+
+![](TermExample/Screenshot.png)
 
 It features full 24-bit color support with ANSI/VT escape sequences (and colors), hardware / GPU accelerated rendering, mouse support, and true console interaction.  This is not just some isolated window hosted in c#, you have full api control for input, output, sizing, and the terminal theming.  The control can start any console application you want (or any default terminal like powershell, pwsh, cmd.exe).  It provides XAML properties for easy settings, and events for things like input/output interception.   The control can also passively log the terminal session and provide both the raw terminal sequence (including all VT codes) and the standard UTF-8 human readable text.
 
