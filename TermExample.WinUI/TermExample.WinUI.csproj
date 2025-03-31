@@ -37,8 +37,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250310001" />
-	  <PackageReference Include="EasyWindowsTerminalControl.WinUI" Version="1.0.1-beta.1" />
-	  
+	  <PackageReference Include="EasyWindowsTerminalControl.WinUI" Version="1.0.15-beta.1" />
+
   </ItemGroup>
   <ItemGroup>
     <!--<ProjectReference Include="..\EasyWindowsTerminalControl.WinUI\EasyWindowsTerminalControl.WinUI.csproj" />-->
@@ -64,7 +64,7 @@
 		<Compile Include="..\TermExample\MainWindow.xaml.cs" Link="MainWindow.xaml.cs" />
 	</ItemGroup>
 
-<!-- next two groups are for unpackaged -->	
+<!-- next two groups are for unpackaged -->
 	<PropertyGroup>
 		<WindowsPackageType>None</WindowsPackageType>
 	</PropertyGroup>

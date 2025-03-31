@@ -1,0 +1,42 @@
+name: Build
+
+on:
+  push:
+    branches-ignore:
+      - trash
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            6
+            8
+      - name: Get .NET information
+        run: dotnet --info
+
+      - name: Build
+        run: ./build.ps1 -Configuration ${{ matrix.configuration }}
+
+      - name: Debug Session
+        if: ${{ failure() && vars.DEBUG_FAIL == '1' && env.WLB_BUILD_TRACE == '1' }}
+        run: .github/debug_ssh_start.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NugetPackages-${{ matrix.configuration }}
+          path: publish/*.nupkg

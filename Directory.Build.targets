@@ -1,0 +1,23 @@
+<Project>
+  <!-- This file applies to all projects in the solution -->
+  <PropertyGroup>
+    <!-- Only apply these settings when building from command line (not in Visual Studio) -->
+    <GeneratePriEnabled Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">false</GeneratePriEnabled>
+    <GenerateProjectSpecificOutputFolder Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">false</GenerateProjectSpecificOutputFolder>
+    <WindowsAppSDKSelfContained Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">true</WindowsAppSDKSelfContained>
+    <SelfContained Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">true</SelfContained>
+
+    <!-- Completely disable MRT and PRI tasks -->
+    <MrtCoreEnabled Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">false</MrtCoreEnabled>
+    <DisableMsixProjectCapabilityAddedByProject>true</DisableMsixProjectCapabilityAddedByProject>
+    <EnableMsixTooling Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">false</EnableMsixTooling>
+  </PropertyGroup>
+
+  <!-- Direct MSBuild to skip the problematic targets -->
+  <Target Name="ExpandPriContent"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'" />
+  <Target Name="MrtProcessResourcePriFiles"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'" />
+  <Target Name="GenerateProjectPriFile"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'" />
+</Project>

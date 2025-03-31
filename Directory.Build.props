@@ -1,0 +1,16 @@
+<Project>
+  <!-- This Directory.Build.props file applies to all projects in the solution -->
+  <PropertyGroup>
+    <!-- Skip WinUI projects during regular command line builds, but include them for NuGet packaging -->
+    <BuildWinUIProjects Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true' and '$(BuildWinUIForNuGet)' != 'true'">false</BuildWinUIProjects>
+    <BuildWinUIProjects Condition="'$(BuildWinUIProjects)' == ''">true</BuildWinUIProjects>
+
+    <!-- Common NuGet package properties -->
+    <Authors Condition="'$(Authors)' == ''">MitchCapper</Authors>
+    <PackageProjectUrl Condition="'$(PackageProjectUrl)' == ''">https://github.com/MitchCapper/EasyWindowsTerminalControl</PackageProjectUrl>
+    <RepositoryUrl Condition="'$(RepositoryUrl)' == ''">https://github.com/MitchCapper/EasyWindowsTerminalControl</RepositoryUrl>
+    <PackageLicenseExpression Condition="'$(PackageLicenseExpression)' == ''">MIT</PackageLicenseExpression>
+    <Copyright Condition="'$(Copyright)' == ''">Copyright © MitchCapper $([System.DateTime]::Now.Year)</Copyright>
+    <PackageTags Condition="'$(PackageTags)' == ''">terminal,console,windows,winui,wpf</PackageTags>
+  </PropertyGroup>
+</Project>

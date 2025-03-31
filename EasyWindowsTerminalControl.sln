@@ -10,8 +10,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Terminal.WinUI3", "Microsoft.Terminal.WinUI3\Microsoft.Terminal.WinUI3.csproj", "{EAE4A2C3-203E-43DD-BADE-63611B1489DF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyWindowsTerminalControl.WinUI", "EasyWindowsTerminalControl.WinUI\EasyWindowsTerminalControl.WinUI.csproj", "{0DC813BE-F9B4-43BC-9F5B-E4A50FD86CB6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EAE4A2C3-203E-43DD-BADE-63611B1489DF} = {EAE4A2C3-203E-43DD-BADE-63611B1489DF}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TermExample.WinUI", "TermExample.WinUI\TermExample.WinUI.csproj", "{63F66283-5142-4B8E-BF28-FF434AF08B0B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0DC813BE-F9B4-43BC-9F5B-E4A50FD86CB6} = {0DC813BE-F9B4-43BC-9F5B-E4A50FD86CB6}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

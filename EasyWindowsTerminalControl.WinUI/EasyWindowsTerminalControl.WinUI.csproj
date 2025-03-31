@@ -6,11 +6,22 @@
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
     <Platforms>AnyCPU;x64</Platforms>
-    <Version>1.0.1-beta.1</Version>
+    <Version>1.0.15-beta.1</Version>
     <Description>High performance WinUI3 native terminal/shell control.  For WPF version see EasyWindowsTerminalControl alt package.   It features full 24-bit color support with ANSI/VT escape sequences (and colors), hardware / GPU accelerated rendering, mouse support, and true console interaction.  Support for command shells and key sequences, user interaction and programatic control.  See GH for more details.</Description>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+    <Authors>MitchCapper</Authors>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<PackageOutputPath>../Publish</PackageOutputPath>
+    <PackageProjectUrl>https://github.com/MitchCapper/EasyWindowsTerminalControl</PackageProjectUrl>
+
+    <!-- Include NuGet packaging settings -->
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <AdditionalFiles Include="NativeMethods.txt" />
+	<None Include="../README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
@@ -26,19 +37,11 @@
 		<Compile Include="..\EasyWindowsTerminalControl\ReadDelimitedTermPTY.cs" Link="ReadDelimitedTermPTY.cs" />
 		<Compile Include="..\EasyWindowsTerminalControl\TermPTY.cs" Link="TermPTY.cs" />
 	</ItemGroup>
-	<!--<ItemGroup>
-		<None Include="..\TermExample\Microsoft.Terminal.Control.dll" Link="Microsoft.Terminal.Control.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-	</ItemGroup>-->
 	<ItemGroup>
 		<PackageReference Include="CI.Microsoft.Windows.Console.ConPTY" Version="1.22.250314001" />
-		<PackageReference Include="CI.Microsoft.Terminal.WinUI3.Unofficial" Version="1.0.1-beta.1" PrivateAssets="None" />
+		<PackageReference Include="CI.Microsoft.Terminal.WinUI3.Unofficial" Version="1.0.15-beta.1" />
 		<PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.106">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 	</ItemGroup>
-	<!--<ItemGroup>
-		<ProjectReference Include="..\Microsoft.Terminal.WinUI3\Microsoft.Terminal.WinUI3.csproj" />
-	</ItemGroup>-->
 </Project>
