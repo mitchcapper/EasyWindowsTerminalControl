@@ -195,6 +195,7 @@ namespace EasyWindowsTerminalControl {
 		/// <param name="disposeOld">True if the old term should be killed off</param>
 		public async Task RestartTerm(TermPTY useTerm = null, bool disposeOld=true){
 			var oldTerm = ConPTYTerm;
+			DisconnectConPTYTerm();
 			ConPTYTerm = useTerm ?? new TermPTY();
 			if (disposeOld){
 				try{
