@@ -193,30 +193,24 @@ namespace EasyWindowsTerminalControl {
 		/// </summary>
 		/// <param name="useTerm">Optional term to use, note if useTerm.TermProcIsStarted this function will not do verry much</param>
 		/// <param name="disposeOld">True if the old term should be killed off</param>
-		public async Task RestartTerm(TermPTY useTerm = null, bool disposeOld=true){
+		public async Task RestartTerm(TermPTY useTerm = null, bool disposeOld = true) {
 			var oldTerm = ConPTYTerm;
 			DisconnectConPTYTerm();
-			ConPTYTerm = useTerm ?? new TermPTY();
-			if (disposeOld){
-				try{
-				oldTerm?.CloseStdinToApp();
-				}catch{ }
-				try{
-				oldTerm?.StopExternalTermOnly();
-				}catch{ }
+			if (disposeOld) {
+				try {
+					oldTerm?.CloseStdinToApp();
+				} catch { }
+				try {
+					oldTerm?.StopExternalTermOnly();
+				} catch { }
 			}
-			await TermInit();
+
+			ConPTYTerm = useTerm ?? new TermPTY(); //setting the term to a new value will automatically initalize everyhting
 		}
 		private void StartTerm(int column_width, int row_height) {
-			if (ConPTYTerm == null)
+			if (ConPTYTerm?.TermProcIsStarted != false)
 				return;
 
-			if (ConPTYTerm.TermProcIsStarted) {
-				ConPTYTerm.Resize(column_width, row_height);
-				Term_TermReady(ConPTYTerm, null);
-				return;
-			}
-			ConPTYTerm.TermReady += Term_TermReady;
 			MainThreadRun(() => {
 				var cmd = StartupCommandLine;//thread safety for dp
 				var term = ConPTYTerm;
