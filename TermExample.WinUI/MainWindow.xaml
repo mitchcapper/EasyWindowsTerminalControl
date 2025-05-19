@@ -22,6 +22,7 @@
 
 			<Button Content="Duplicate New" Click="DuplicateClicked" Margin="5" />
 			<Button Content="Clear Term" Click="ClearTermClicked" Margin="5" />
+			<Button Content="Restart Term" Click="RestartTermClicked" Margin="5" />
 			<Button Content="Show Buffer" Click="ShowBufferClicked" Margin="5" />
 		</StackPanel>
 	</Grid>

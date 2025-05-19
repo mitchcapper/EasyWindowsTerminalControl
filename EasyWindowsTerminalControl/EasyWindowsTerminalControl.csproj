@@ -5,7 +5,7 @@
 		<PlatformTarget>x64</PlatformTarget>
 		<Platforms>x64</Platforms>
 		<UseWpf>true</UseWpf>
-		<Version>1.0.33</Version>
+		<Version>1.0.34</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageOutputPath>../Publish</PackageOutputPath>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -32,3 +32,4 @@
 
 
 </Project>
+

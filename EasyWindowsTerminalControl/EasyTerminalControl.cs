@@ -188,6 +188,24 @@ namespace EasyWindowsTerminalControl {
 				ConPTYTerm.Resize(Terminal.Columns, Terminal.Rows);//fix the size being partially off on first load
 			});
 		}
+		/// <summary>
+		/// Restarts the command we are running in a brand new term and disposes of the old one
+		/// </summary>
+		/// <param name="useTerm">Optional term to use, note if useTerm.TermProcIsStarted this function will not do verry much</param>
+		/// <param name="disposeOld">True if the old term should be killed off</param>
+		public async Task RestartTerm(TermPTY useTerm = null, bool disposeOld=true){
+			var oldTerm = ConPTYTerm;
+			ConPTYTerm = useTerm ?? new TermPTY();
+			if (disposeOld){
+				try{
+				oldTerm?.CloseStdinToApp();
+				}catch{ }
+				try{
+				oldTerm?.StopExternalTermOnly();
+				}catch{ }
+			}
+			await TermInit();
+		}
 		private void StartTerm(int column_width, int row_height) {
 			if (ConPTYTerm == null)
 				return;
@@ -206,11 +224,16 @@ namespace EasyWindowsTerminalControl {
 			});
 		}
 		private async void Terminal_Loaded(object sender, RoutedEventArgs e) {
+			await TermInit();
+			//Terminal.Focus();
+		}
+
+		private async Task TermInit() {
 			StartTerm(Terminal.Columns, Terminal.Rows);
 			SetTheme(Theme);
 			SetCursor(IsCursorVisible);
 			SetReadOnly(IsReadOnly);
-			//Terminal.Focus();
+
 			await Task.Delay(1000);
 			SetCursor(IsCursorVisible);
 		}

@@ -59,6 +59,7 @@ The control has all the standard UserControl properties but it has the following
 ### Methods
 #### EasyTerminalControl
 - `DisconnectConPTYTerm()` - Mostly useful if you plan to connect another ConPTYTerm to the frontend
+- `RestartTerm(TermPTY useTerm = null, bool disposeOld=true)` - Restarts the process in a clean term with a new TermPTY instance. Can set `useTerm` to use your own TermPTY instance rather than ours. Any properties (ie StartupCommandLine) that have been changed the new version is used.
 
 #### TermPTY
 - `TermPTY(int READ_BUFFER_SIZE = 1024 * 16, bool USE_BINARY_WRITER = false, IProcessFactory ProcessFactory=null)` - The read buffer is the maximum that can be read at once, rarely would it need to be changed.  By default data is transmitted as UTF8 text however conpty does support binary reading and writing.  No matter what mode you use, you can use the `WriteToTerm` or `WriteToTermBinary` functions and it will automatically transform them to bytes/text automatically.  Of course if you are working with binary data but don't have binary writing on you will run into problems when it attempts to call Encoding.UTF8.GetString on those bytes.  IProcessFactory interface is responsible for creating the actual process.  If you need more control you can implement this but please review the default implementation first.  There are some [specific things](https://docs.microsoft.com/en-us/windows/console/creating-a-pseudoconsole-session#preparing-for-creation-of-the-child-process) that must be set or else the console interaction may not work properly.

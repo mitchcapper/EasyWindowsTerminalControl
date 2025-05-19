@@ -107,6 +107,11 @@ namespace TermExample.WinUI {
 			RefocusKB();
 
 		}
+		private void RestartTermClicked(object sender, RoutedEventArgs e) {
+			basicTermControl.RestartTerm();
+			RefocusKB();
+
+		}
 
 
 		private void DuplicateClicked(object sender, RoutedEventArgs e) {
