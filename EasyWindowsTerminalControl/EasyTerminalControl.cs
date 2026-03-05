@@ -133,6 +133,11 @@ namespace EasyWindowsTerminalControl {
 			set => SetValue(StartupCommandLineProperty, value);
 		}
 
+		public string WorkingDirectory {
+			get => (string)GetValue(WorkingDirectoryProperty);
+			set => SetValue(WorkingDirectoryProperty, value);
+		}
+
 		public bool LogConPTYOutput {
 			get => (bool)GetValue(LogConPTYOutputProperty);
 			set => SetValue(LogConPTYOutputProperty, value);
@@ -215,7 +220,12 @@ namespace EasyWindowsTerminalControl {
 				var cmd = StartupCommandLine;//thread safety for dp
 				var term = ConPTYTerm;
 				var logOutput = LogConPTYOutput;
-				Task.Run(() => term.Start(cmd, column_width, row_height, logOutput));
+				var workingDir = WorkingDirectory;
+                //fallback to UserProfile
+                if (workingDir != null && (!System.IO.Directory.Exists(workingDir) || workingDir == "%USERPROFILE%")) {
+					workingDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+				}
+				Task.Run(() => term.Start(cmd, column_width, row_height, logOutput, null, workingDir));
 			});
 		}
 		private async void Terminal_Loaded(object sender, RoutedEventArgs e) {
@@ -246,6 +256,8 @@ namespace EasyWindowsTerminalControl {
 #endif
 		public static readonly DependencyProperty ConPTYTermProperty = DependencyProperty.Register(nameof(ConPTYTerm), typeof(TermPTY), typeof(EasyTerminalControl), new(null, OnTermChanged));
 		public static readonly DependencyProperty StartupCommandLineProperty = DependencyProperty.Register(nameof(StartupCommandLine), typeof(string), typeof(EasyTerminalControl), new PropertyMetadata("powershell.exe"));
+
+		public static readonly DependencyProperty WorkingDirectoryProperty = DependencyProperty.Register(nameof(WorkingDirectory), typeof(string), typeof(EasyTerminalControl), new PropertyMetadata(null));
 
 		public static readonly DependencyProperty LogConPTYOutputProperty = DependencyProperty.Register(nameof(LogConPTYOutput), typeof(bool), typeof(EasyTerminalControl), new PropertyMetadata(false));
 		public static readonly DependencyProperty Win32InputModeProperty = DependencyProperty.Register(nameof(Win32InputMode), typeof(bool), typeof(EasyTerminalControl), new PropertyMetadata(true));

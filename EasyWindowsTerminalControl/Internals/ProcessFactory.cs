@@ -13,7 +13,7 @@ namespace EasyWindowsTerminalControl.Internals {
 		void Kill(bool EntireProcessTree = false);
 	}
 	public interface IProcessFactory {
-		IProcess Start(string command, nuint attributes, PseudoConsole console);
+		IProcess Start(string command, nuint attributes, PseudoConsole console, string workingDirectory = null);
 	}
 	/// <summary>
 	/// Support for starting and configuring processes.
@@ -49,9 +49,9 @@ namespace EasyWindowsTerminalControl.Internals {
 		/// <summary>
 		/// Start and configure a process. The return value represents the process and should be disposed.
 		/// </summary>
-		public static WrappedProcess Start(string command, nuint attributes, PseudoConsole console) {
+		public static WrappedProcess Start(string command, nuint attributes, PseudoConsole console, string workingDirectory = null) {
 			var startupInfo = ConfigureProcessThread(console.Handle, attributes);
-			var processInfo = RunProcess(ref startupInfo, command);
+			var processInfo = RunProcess(ref startupInfo, command, workingDirectory);
 			return new(new Process(startupInfo, processInfo));
 		}
 
@@ -100,14 +100,14 @@ namespace EasyWindowsTerminalControl.Internals {
 			return startupInfo;
 		}
 
-		unsafe private static PROCESS_INFORMATION RunProcess(ref STARTUPINFOEXW sInfoEx, string commandLine) {
+		unsafe private static PROCESS_INFORMATION RunProcess(ref STARTUPINFOEXW sInfoEx, string commandLine, string workingDirectory = null) {
 			uint securityAttributeSize = (uint)Marshal.SizeOf<SECURITY_ATTRIBUTES>();
 			var pSec = new SECURITY_ATTRIBUTES { nLength = securityAttributeSize };
 			var tSec = new SECURITY_ATTRIBUTES { nLength = securityAttributeSize };
 			var info = sInfoEx;
 			Span<char> spanChar = (commandLine + '\0').ToCharArray();
 
-			var success = PInvoke.CreateProcess(null, ref spanChar, pSec, tSec, false, PROCESS_CREATION_FLAGS.EXTENDED_STARTUPINFO_PRESENT, null, null, info.StartupInfo, out var pInfo);
+			var success = PInvoke.CreateProcess(null, ref spanChar, pSec, tSec, false, PROCESS_CREATION_FLAGS.EXTENDED_STARTUPINFO_PRESENT, null, workingDirectory, info.StartupInfo, out var pInfo);
 
 			if (!success)
 				throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not create process.");

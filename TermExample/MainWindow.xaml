@@ -11,7 +11,7 @@
 			<RowDefinition/>
 			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
-		<term:EasyTerminalControl x:Name="basicTermControl" StartupCommandLine="{Binding StartupCommand}" Theme="{Binding Theme, Mode=OneWay}" FontFamilyWhenSettingTheme="Consolas" LogConPTYOutput="True"  Win32InputMode="True" InputCapture="TabKey,DirectionKeys" >
+		<term:EasyTerminalControl x:Name="basicTermControl" StartupCommandLine="{Binding StartupCommand}" WorkingDirectory="{Binding WorkingDirectory}" Theme="{Binding Theme, Mode=OneWay}" FontFamilyWhenSettingTheme="Consolas" LogConPTYOutput="True"  Win32InputMode="True" InputCapture="TabKey,DirectionKeys" >
 			<term:EasyTerminalControl.Resources>
 				<Style TargetType="ScrollBar" BasedOn="{StaticResource {x:Type ScrollBar}}">
 					<!--Lazy Theming-->

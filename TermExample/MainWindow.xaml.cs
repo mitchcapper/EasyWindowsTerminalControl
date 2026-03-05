@@ -61,6 +61,8 @@ namespace TermExample.WinUI {
 			public void TriggerPropChanged(string prop) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
 
 			public string StartupCommand => "pwsh.exe";
+			public string WorkingDirectory => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
 			private static Color AlphaOverrideColor(Color color, byte alphaOverride) => Color.FromArgb(alphaOverride, color.R, color.G, color.B);
 
 			private static readonly Color BackroundColor = Color.FromArgb(255, 0, 0, 30);
