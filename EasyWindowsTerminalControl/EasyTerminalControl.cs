@@ -221,9 +221,9 @@ namespace EasyWindowsTerminalControl {
 				var term = ConPTYTerm;
 				var logOutput = LogConPTYOutput;
 				var workingDir = WorkingDirectory;
-                //fallback to UserProfile
-                if (workingDir != null && (!System.IO.Directory.Exists(workingDir) || workingDir == "%USERPROFILE%")) {
-					workingDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+				//If the directory does not exist, set it to null (default behavior).
+				if (workingDir != null && !System.IO.Directory.Exists(workingDir)) {
+					workingDir = null;
 				}
 				Task.Run(() => term.Start(cmd, column_width, row_height, logOutput, null, workingDir));
 			});
