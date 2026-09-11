@@ -1,7 +1,7 @@
 [submodule "external/Terminal"]
 	path = external/Terminal
-	url = https://github.com/microsoft/terminal
+	url = https://github.com/NikulovE/terminal.git
+	branch = sftp-explorer-history-30000
 	shallow = true
 	sparse-checkout = src/cascadia/WpfTerminalControl
 	fetchRecurseSubmodules = false
-	

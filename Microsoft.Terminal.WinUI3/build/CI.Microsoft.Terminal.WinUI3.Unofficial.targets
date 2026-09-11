@@ -1,10 +1,10 @@
 <Project>
   <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)..\lib\net8.0-windows10.0.19041\Microsoft.Terminal.WinUI3\TerminalControl.xbf">
+    <Content Include="$(MSBuildThisFileDirectory)..\lib\net10.0-windows10.0.22621\Microsoft.Terminal.WinUI3\TerminalControl.xbf">
       <Link>Microsoft.Terminal.WinUI3\TerminalControl.xbf</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\lib\net8.0-windows10.0.19041\Microsoft.Terminal.WinUI3\TerminalControl.xaml">
+    <Content Include="$(MSBuildThisFileDirectory)..\lib\net10.0-windows10.0.22621\Microsoft.Terminal.WinUI3\TerminalControl.xaml">
       <Link>Microsoft.Terminal.WinUI3\TerminalControl.xaml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

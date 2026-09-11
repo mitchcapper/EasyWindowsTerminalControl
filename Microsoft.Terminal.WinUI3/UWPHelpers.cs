@@ -37,15 +37,17 @@ namespace Microsoft.Terminal.WinUI3 {
 					action();
 					return Task.CompletedTask;
 				}
-				var tcs = new TaskCompletionSource<object>();
-				dispatcher.TryEnqueue(priority, () => {
+				var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+				if (!dispatcher.TryEnqueue(priority, () => {
 					try {
 						action();
-						tcs.SetResult(null);
+						tcs.TrySetResult(null);
 					} catch (Exception ex) {
-						tcs.SetException(ex);
+						tcs.TrySetException(ex);
 					}
-				});
+				})) {
+					tcs.TrySetCanceled();
+				}
 				return tcs.Task;
 			} catch (Exception ex) {
 				return Task.FromException(ex);

@@ -4,8 +4,8 @@
     <!-- Only apply these settings when building from command line (not in Visual Studio) -->
     <GeneratePriEnabled Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">false</GeneratePriEnabled>
     <GenerateProjectSpecificOutputFolder Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">false</GenerateProjectSpecificOutputFolder>
-    <WindowsAppSDKSelfContained Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">true</WindowsAppSDKSelfContained>
-    <SelfContained Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">true</SelfContained>
+    <WindowsAppSDKSelfContained Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true' and '$(OutputType)' != 'Library'">true</WindowsAppSDKSelfContained>
+    <SelfContained Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true' and '$(OutputType)' != 'Library'">true</SelfContained>
 
     <!-- Completely disable MRT and PRI tasks -->
     <MrtCoreEnabled Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingInsideVisualStudio)' != 'true'">false</MrtCoreEnabled>

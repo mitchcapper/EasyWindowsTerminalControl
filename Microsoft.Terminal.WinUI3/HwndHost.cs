@@ -26,6 +26,23 @@ namespace System.Windows.Interop {
 	/// A mostly complete hackish reimplementation of the WPF HwndHost, draw code specifically removed as Terminal did not need but can be ported
 	/// </summary>
 	internal abstract class HwndHost : FrameworkElement, IDisposable, IKeyboardInputSink {
+		[System.Runtime.InteropServices.DllImport("gdi32.dll", SetLastError = true)]
+		private static extern IntPtr CreateRectRgn(int left, int top, int right, int bottom);
+
+		[System.Runtime.InteropServices.DllImport("gdi32.dll", SetLastError = true)]
+		[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+		private static extern bool DeleteObject(IntPtr hObject);
+
+		[System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+		private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn,
+			[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] bool redraw);
+
+		private double? _leftOverlayBoundaryInXamlRootDips;
+		private bool _hasAppliedWindowRegion;
+		private int _lastRegionLeft = -1;
+		private int _lastRegionWidth = -1;
+		private int _lastRegionHeight = -1;
+
 		static HwndHost() {
 
 		}
@@ -67,10 +84,24 @@ namespace System.Windows.Interop {
 				if (_hwnd != HWND.Null) {
 					if (!PInvoke.IsWindow(_hwnd)) {
 						_hwnd = HWND.Null;
-					}
-				}
-
+	}
+}
 				return _hwnd;
+			}
+		}
+
+		internal void SetLeftOverlayBoundary(double? boundaryInXamlRootDips) {
+			if (_leftOverlayBoundaryInXamlRootDips == boundaryInXamlRootDips) {
+				return;
+			}
+
+			_leftOverlayBoundaryInXamlRootDips = boundaryInXamlRootDips;
+			_lastRegionLeft = -1;
+			_lastRegionWidth = -1;
+			_lastRegionHeight = -1;
+
+			if (!_hwnd.IsNull) {
+				QueueWindowPositionUpdate();
 			}
 		}
 		protected HWND XAMLParentWindow {
@@ -149,6 +180,7 @@ namespace System.Windows.Interop {
 
 		protected WindowMessageMonitor xamlParentMessageMonitor;
 		protected WindowMessageMonitor _hwndSubclassHook;
+		private long? _visibilityChangedToken;
 		/// <summary>
 		///     An event that is notified of all unhandled messages received
 		///     by the hosted window.
@@ -177,7 +209,8 @@ namespace System.Windows.Interop {
 		/// </summary>
 		protected virtual void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi) {
 			//RaiseEvent(new DpiChangedEventArgs(oldDpi, newDpi, HwndHost.DpiChangedEvent, this));
-			UpdateWindowPos();
+			InvalidateWindowPositionCache();
+			QueueWindowPositionUpdate();
 		}
 
 
@@ -379,11 +412,9 @@ namespace System.Windows.Interop {
 
 				// Set the Win32 position for the child window.
 				//
-				// Note, we can't check the existing position because we use
-				// SWP_ASYNCWINDOWPOS, which means we could have pending position
-				// change requests that haven't been applied yet.  If we need
-				// this functionality (to avoid the extra SetWindowPos calls),
-				// we'll have to track the last RECT we sent Win32 ourselves.
+				// Track the last rectangle sent to Win32 so we can avoid redundant
+				// synchronous SetWindowPos calls. A resize of the terminal renderer
+				// must only run after this position update has completed.
 				//
 				OnWindowPositionChanged(rcClientRTLAdjusted);
 
@@ -422,12 +453,12 @@ namespace System.Windows.Interop {
 		Rect GetBoundsRelativeToXAMLWindowRasterScaled() {
 			if (this.Parent == null || XAMLParentWindow.IsNull)
 				throw new Exception("We are not part of the UI or the parent is not yet set");
-			var Pt = GetTransformToXamlRootContent().TransformPoint(
-				new Point(0, 0)
-			);
+			var point = GetTransformToXamlRootContent().TransformPoint(new Point(0, 0));
+			var rasterizationScale = this.XamlRoot.RasterizationScale;
+			point = new Point(point.X * rasterizationScale, point.Y * rasterizationScale);
 			var toSize = ActualSize.ToSize();
-			toSize = new Size(toSize.Width * this.XamlRoot.RasterizationScale, toSize.Height * this.XamlRoot.RasterizationScale);
-			return AdjustRectForDpi(new Rect(Pt, toSize));
+			toSize = new Size(toSize.Width * rasterizationScale, toSize.Height * rasterizationScale);
+			return AdjustRectForDpi(new Rect(point, toSize));
 		}
 
 		/// <summary>
@@ -455,7 +486,7 @@ namespace System.Windows.Interop {
 				return rcRect;
 
 			double dpiRatio = DpiParentToChildRatio;
-			return new(rcRect.Left / dpiRatio, rcRect.Top / dpiRatio, rcRect.Right / dpiRatio, rcRect.Bottom / dpiRatio);
+			return new(rcRect.X / dpiRatio, rcRect.Y / dpiRatio, rcRect.Width / dpiRatio, rcRect.Height / dpiRatio);
 		}
 
 		/// <summary>
@@ -481,12 +512,28 @@ namespace System.Windows.Interop {
 				// Verify the thread has access to the context.
 #pragma warning suppress 6519
 
+				this.SizeChanged -= OnSizeChanged;
+				this.PreviewKeyDown -= OnKeyDown;
+				this.PreviewKeyUp -= OnKeyUp;
+				if (_visibilityChangedToken is long visibilityChangedToken) {
+					this.UnregisterPropertyChangedCallback(UIElement.VisibilityProperty, visibilityChangedToken);
+					_visibilityChangedToken = null;
+				}
+
+				if (xamlParentMessageMonitor != null) {
+					xamlParentMessageMonitor.WindowMessageReceived -= xamlParentWndProc;
+					xamlParentMessageMonitor.Dispose();
+					xamlParentMessageMonitor = null;
+					_XAMLParentWindow = HWND.Null;
+				}
+
 
 
 				// Remove our subclass.  Even if this fails, it will be forcably removed
 				// when the window is destroyed.
 				if (_hwndSubclassHook != null) {
 					// Check if it is trusted (WebOC and AddInHost), call CriticalDetach to avoid the Demand.
+					_hwndSubclassHook.WindowMessageReceived -= SubclassWndProc;
 					_hwndSubclassHook.Dispose();
 
 					_hwndSubclassHook = null;
@@ -537,6 +584,20 @@ namespace System.Windows.Interop {
 		/// </summary>
 		protected abstract void DestroyWindowCore(HWND hwnd);
 
+		/// <summary>
+		/// Called when the hosted HWND is destroyed outside <see cref="DestroyWindowCore"/>.
+		/// Implementations can invalidate native state without destroying the HWND
+		/// reentrantly from inside WM_NCDESTROY.
+		/// </summary>
+		protected virtual void OnHostedWindowDestroyed(HWND hwnd) {
+		}
+
+		/// <summary>
+		/// Called after the hosted HWND has accepted its XAML layout rectangle.
+		/// </summary>
+		protected virtual void OnHostedWindowPositionApplied(int width, int height) {
+		}
+
 
 
 		/// <summary>
@@ -550,9 +611,17 @@ namespace System.Windows.Interop {
 			var msg = e.Message;
 
 			switch ((WindowsMessages)e.Message.MessageId) {
-				case WindowsMessages.NCDESTROY:
+				case WindowsMessages.NCDESTROY: {
+					var destroyedHwnd = _hwnd == HWND.Null ? new HWND(msg.Hwnd) : _hwnd;
 					_hwnd = HWND.Null;
+					InvalidateWindowPositionCache();
+					_hasAppliedWindowRegion = false;
+					_lastRegionLeft = -1;
+					_lastRegionWidth = -1;
+					_lastRegionHeight = -1;
+					OnHostedWindowDestroyed(destroyedHwnd);
 					break;
+				}
 
 				// When layout happens, we first calculate the right size/location then call SetWindowPos.
 				// We only allow the changes that are coming from Avalon layout. The hwnd is not allowed to change by itself.
@@ -641,21 +710,111 @@ namespace System.Windows.Interop {
 		/// </summary>
 		/// <param name="rcBoundingBox"></param>
 		protected virtual void OnWindowPositionChanged(Rect rcBoundingBox) {
-			if (_isDisposed) {
+			if (_isDisposed || _isUpdatingWindowPosition || _hwnd == HWND.Null || !PInvoke.IsWindow(_hwnd)) {
 				return;
 			}
 
+			_isUpdatingWindowPosition = true;
+			try {
+				var x = (int)rcBoundingBox.X;
+				var y = (int)rcBoundingBox.Y;
+				var width = Math.Max(0, (int)rcBoundingBox.Width);
+				var height = Math.Max(0, (int)rcBoundingBox.Height);
+				if (_hasLastWindowPosition &&
+					_lastWindowX == x &&
+					_lastWindowY == y &&
+					_lastWindowWidth == width &&
+					_lastWindowHeight == height) {
+					ApplyWindowRegion(rcBoundingBox);
+					return;
+				}
 
-			PInvoke.SetWindowPos(_hwnd,
-										   HWND.Null,
-										   (int)rcBoundingBox.X,
-										   (int)rcBoundingBox.Y,
-										   (int)rcBoundingBox.Width,
-										   (int)rcBoundingBox.Height,
-										   SET_WINDOW_POS_FLAGS.SWP_ASYNCWINDOWPOS
-										   | SET_WINDOW_POS_FLAGS.SWP_NOZORDER
-										   | SET_WINDOW_POS_FLAGS.SWP_NOCOPYBITS
-										   | SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE);
+				// HWND_BOTTOM controls the z-order only among HWND siblings. XAML siblings are
+				// compositor content, so they still suffer from HwndHost airspace. Keep the
+				// renderer at the bottom of the HWND sibling order, then clip the portion that
+				// is covered by the left-side XAML overlay.
+				NativeWindowResizeOrder.Apply(
+					() => PInvoke.SetWindowPos(_hwnd,
+						new HWND(1),
+						x,
+						y,
+						width,
+						height,
+						SET_WINDOW_POS_FLAGS.SWP_NOCOPYBITS
+						| SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE),
+					() => {
+						_hasLastWindowPosition = true;
+						_lastWindowX = x;
+						_lastWindowY = y;
+						_lastWindowWidth = width;
+						_lastWindowHeight = height;
+						OnHostedWindowPositionApplied(width, height);
+					});
+
+				ApplyWindowRegion(rcBoundingBox);
+			} finally {
+				_isUpdatingWindowPosition = false;
+			}
+		}
+
+		private void InvalidateWindowPositionCache() {
+			_hasLastWindowPosition = false;
+		}
+
+		private void ApplyWindowRegion(Rect rcBoundingBox) {
+			if (_hwnd.IsNull) {
+				return;
+			}
+
+			var width = Math.Max(0, (int)Math.Ceiling(rcBoundingBox.Width));
+			var height = Math.Max(0, (int)Math.Ceiling(rcBoundingBox.Height));
+			var clipLeft = 0;
+
+			if (_leftOverlayBoundaryInXamlRootDips is double boundary && XamlRoot != null) {
+				var boundaryInChildPixels = boundary * XamlRoot.RasterizationScale;
+				if (_hasDpiAwarenessContextTransition) {
+					boundaryInChildPixels /= DpiParentToChildRatio;
+				}
+
+				clipLeft = Math.Clamp(
+					(int)Math.Ceiling(boundaryInChildPixels - rcBoundingBox.X),
+					0,
+					width);
+			}
+
+			if (clipLeft <= 0) {
+				if (_hasAppliedWindowRegion) {
+					SetWindowRgn(_hwnd.Value, IntPtr.Zero, true);
+					_hasAppliedWindowRegion = false;
+				}
+				_lastRegionLeft = 0;
+				_lastRegionWidth = width;
+				_lastRegionHeight = height;
+				return;
+			}
+
+			if (_hasAppliedWindowRegion &&
+				_lastRegionLeft == clipLeft &&
+				_lastRegionWidth == width &&
+				_lastRegionHeight == height) {
+				return;
+			}
+
+			var region = CreateRectRgn(clipLeft, 0, width, height);
+			if (region == IntPtr.Zero) {
+				return;
+			}
+
+			// After a successful SetWindowRgn call USER32 owns the HRGN.
+			if (SetWindowRgn(_hwnd.Value, region, true) == 0) {
+				DeleteObject(region);
+				return;
+			}
+
+			_hasAppliedWindowRegion = true;
+			_lastRegionLeft = clipLeft;
+			_lastRegionWidth = width;
+			_lastRegionHeight = height;
 		}
 
 		/// <summary>
@@ -703,10 +862,10 @@ namespace System.Windows.Interop {
 
 
 
-			this.LayoutUpdated += (_, _) => UpdateWindowPos();
+			this.SizeChanged += OnSizeChanged;
 			this.PreviewKeyDown += OnKeyDown;
 			this.PreviewKeyUp += OnKeyUp;
-			this.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, OnVisibleChanged);
+			_visibilityChangedToken = this.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, OnVisibleChanged);
 
 
 		}
@@ -743,8 +902,42 @@ namespace System.Windows.Interop {
 			BuildOrReparentWindow();
 		}
 
-		private void OnLayoutUpdated(object sender, object e) {
-			UpdateWindowPos();
+		private void OnSizeChanged(object sender, SizeChangedEventArgs e) {
+			var hasValidSize = e.NewSize.Width > 0 && e.NewSize.Height > 0;
+			if (!NativeWindowPositionUpdatePolicy.ShouldQueue(
+				_isDisposed,
+				_isUpdatingWindowPosition,
+				hasValidSize,
+				_lastXamlSizeForWindowPosition == e.NewSize)) {
+				return;
+			}
+
+			_lastXamlSizeForWindowPosition = e.NewSize;
+			QueueWindowPositionUpdate();
+		}
+
+		private void QueueWindowPositionUpdate() {
+			if (_isDisposed || _windowPositionUpdateQueued) {
+				return;
+			}
+
+			_windowPositionUpdateQueued = true;
+			try {
+				if (DispatcherQueue.TryEnqueue(() => {
+					_windowPositionUpdateQueued = false;
+					if (_isDisposed) {
+						return;
+					}
+
+					UpdateWindowPos();
+				})) {
+					return;
+				}
+			} catch (Exception ex) {
+				Debug.WriteLine($"Unable to queue hosted window position update: {ex}");
+			}
+
+			_windowPositionUpdateQueued = false;
 		}
 
 		private void OnEnabledChanged(object sender, DependencyPropertyChangedEventArgs e) {
@@ -774,7 +967,8 @@ namespace System.Windows.Interop {
 				PInvoke.ShowWindowAsync(_hwnd, ActivateOnShow ? SHOW_WINDOW_CMD.SW_SHOW : SHOW_WINDOW_CMD.SW_SHOWNA);
 			else
 				PInvoke.ShowWindowAsync(_hwnd, SHOW_WINDOW_CMD.SW_HIDE);
-			UpdateWindowPos();
+
+			QueueWindowPositionUpdate();
 		}
 
 		// This routine handles the following cases:
@@ -806,13 +1000,13 @@ namespace System.Windows.Interop {
 						// We now have a parent window, so we can create the child
 						// window.
 						BuildWindow(XAMLParentWindow);
-						this.LayoutUpdated += OnLayoutUpdated;
 						//this.IsEnabledChanged += _handlerEnabledChanged;
 						//this.propertych += _handlerVisibleChanged;
 					} else if (XAMLParentWindow != PInvoke.GetParent(_hwnd)) {
 						// We have a different parent window.  Just reparent the
 						// child window under the new parent window.
 						PInvoke.SetParent(_hwnd, XAMLParentWindow);
+						InvalidateWindowPositionCache();
 					}
 				} else if (Handle != IntPtr.Zero) {
 					// Reparent the window to notification-only window provided by SystemResources
@@ -851,7 +1045,12 @@ namespace System.Windows.Interop {
 			DemandIfUntrusted();
 
 			// Allow the derived class to build our HWND.
+			InvalidateWindowPositionCache();
 			_hwnd = BuildWindowCore(hwndParent);
+			_hasAppliedWindowRegion = false;
+			_lastRegionLeft = -1;
+			_lastRegionWidth = -1;
+			_lastRegionHeight = -1;
 			if (_hwnd == IntPtr.Zero || !PInvoke.IsWindow(_hwnd)) {
 				throw new InvalidOperationException("ChildWindowNotCreated");
 			}
@@ -912,7 +1111,7 @@ namespace System.Windows.Interop {
 		private void DispatcherInvoke(Action action, Microsoft.UI.Dispatching.DispatcherQueuePriority priority = Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal) =>
 			UWPHelpers.Enqueue(this.DispatcherQueue, action, priority);
 
-		private bool CheckAccess() => false;
+		private bool CheckAccess() => this.DispatcherQueue.HasThreadAccess;
 		private void DestroyWindow() {
 			// Destroy the window if we are hosting one.
 			if (Handle == IntPtr.Zero)
@@ -931,6 +1130,7 @@ namespace System.Windows.Interop {
 
 			var hwnd = _hwnd;
 			_hwnd = HWND.Null;
+			InvalidateWindowPositionCache();
 
 			DestroyWindowCore(hwnd);
 		}
@@ -954,6 +1154,14 @@ namespace System.Windows.Interop {
 		private HWND _hwnd;
 
 		private Size _desiredSize;
+		private bool _isUpdatingWindowPosition;
+		private bool _windowPositionUpdateQueued;
+		private Size _lastXamlSizeForWindowPosition;
+		private bool _hasLastWindowPosition;
+		private int _lastWindowX;
+		private int _lastWindowY;
+		private int _lastWindowWidth;
+		private int _lastWindowHeight;
 
 		/// <summary>
 		/// True when the parent of <see cref="_hwnd"/> and <see cref="_hwnd"/>

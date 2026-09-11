@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 using Windows.Win32;
@@ -22,8 +23,12 @@ namespace Microsoft.Terminal.Wpf {
 	/// <summary>
 	/// A basic terminal control. This control can receive and render standard VT100 sequences.
 	/// </summary>
-	public partial class TerminalControl : UserControl {
-		private int accumulatedDelta = 0;
+	public partial class TerminalControl : UserControl, IDisposable {
+		private const uint WheelPageScroll = uint.MaxValue;
+		private double accumulatedScrollUnits;
+		private long? visibilityChangedToken;
+		private bool disposed;
+
 		public TerminalControl() {
 
 			this.InitializeComponent();
@@ -32,20 +37,23 @@ namespace Microsoft.Terminal.Wpf {
 
 		}
 
-		private async void TerminalControl_GettingFocus(UIElement sender, GettingFocusEventArgs args) {
-			args.Cancel = true;
+		private void TerminalControl_GettingFocus(UIElement sender, GettingFocusEventArgs args) {
+			args.Handled = true;
 			termContainer.PassFocus();
 		}
 
-		private static int? _ScrollLines;
-		private static unsafe int ScrollLines {
+		private static uint? _scrollLines;
+		private static unsafe uint ScrollLines {
 			get {
-				if (_ScrollLines == null) {
-					uint scrollLines;
-					_ScrollLines = PInvoke.SystemParametersInfo(SYSTEM_PARAMETERS_INFO_ACTION.SPI_GETWHEELSCROLLLINES, 0, &scrollLines, 0);
-					_ScrollLines = (int)scrollLines;
+				if (_scrollLines == null) {
+					uint scrollLines = 3;
+					if (!PInvoke.SystemParametersInfo(SYSTEM_PARAMETERS_INFO_ACTION.SPI_GETWHEELSCROLLLINES, 0, &scrollLines, 0)) {
+						scrollLines = 3;
+					}
+
+					_scrollLines = scrollLines;
 				}
-				return _ScrollLines.Value;
+				return _scrollLines.Value;
 			}
 		}
 
@@ -60,10 +68,32 @@ namespace Microsoft.Terminal.Wpf {
 
 			this.PointerWheelChanged += MouseWheelChanged;
 
-			this.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, OnVisibleChanged);
+			visibilityChangedToken = this.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, OnVisibleChanged);
 			IsTabStop = true;
 			this.GettingFocus += TerminalControl_GettingFocus;
 		}
+
+		public void Dispose() {
+			if (disposed) {
+				return;
+			}
+
+			disposed = true;
+			termContainer.Connection = null;
+			termContainer.TerminalScrolled -= this.TermControl_TerminalScrolled;
+			termContainer.UserScrolled -= this.TermControl_UserScrolled;
+			scrollbar.Scroll -= this.Scrollbar_Scroll;
+			this.SizeChanged -= this.TerminalControl_SizeChanged;
+			this.PointerWheelChanged -= MouseWheelChanged;
+			this.GettingFocus -= TerminalControl_GettingFocus;
+			if (visibilityChangedToken is long token) {
+				this.UnregisterPropertyChangedCallback(UIElement.VisibilityProperty, token);
+				visibilityChangedToken = null;
+			}
+
+			termContainer.Dispose();
+		}
+
 
 		private void OnVisibleChanged(DependencyObject sender, DependencyProperty dp) {
 			termContainer.Visibility = Visibility;
@@ -85,6 +115,24 @@ namespace Microsoft.Terminal.Wpf {
 		/// Gets the current character columns available to the terminal.
 		/// </summary>
 		public int Columns => this.termContainer.Columns;
+
+		/// <summary>
+		/// Gets whether the hosted native renderer has completed HWND creation.
+		/// </summary>
+		public bool IsRendererReady => this.termContainer.IsNativeReady;
+
+		/// <summary>
+		/// Reapplies the default theme and viewport after a collapsed terminal
+		/// panel has become visible and received its final layout size.
+		/// </summary>
+		public void RefreshRenderer() {
+			if (this.termContainer.IsNativeReady) {
+				this.termContainer.SetTheme(
+					TerminalThemeDefaults.Create(),
+					TerminalThemeDefaults.FontFamily,
+					TerminalThemeDefaults.FontSize);
+			}
+		}
 
 		/// <summary>
 		/// Gets or sets a value indicating whether if the renderer should automatically resize to fill the control
@@ -162,6 +210,14 @@ namespace Microsoft.Terminal.Wpf {
 		}
 		public Task RunAsync(Action action) => UWPHelpers.Enqueue(this.DispatcherQueue, action);
 		public double DPIScale => termContainer.curDPI.DpiScaleX;
+
+		/// <summary>
+		/// Clips the native renderer behind a left-side XAML overlay.
+		/// The boundary is expressed in XamlRoot DIPs; pass null to remove clipping.
+		/// </summary>
+		public void SetLeftOverlayBoundary(double? boundaryInXamlRootDips) {
+			termContainer.SetLeftOverlayBoundary(boundaryInXamlRootDips);
+		}
 		/// <summary>
 		/// Resizes the terminal to the specified dimensions.
 		/// </summary>
@@ -196,6 +252,9 @@ namespace Microsoft.Terminal.Wpf {
 
 		/// <inheritdoc/>
 		private void TerminalControl_SizeChanged(object sender, SizeChangedEventArgs sizeInfo) {
+			if (this.disposed) {
+				return;
+			}
 
 			var newSizeWidth = (sizeInfo.NewSize.Width - this.scrollbar.ActualWidth) * DPIScale;
 			newSizeWidth = newSizeWidth < 0 ? 0 : newSizeWidth;
@@ -208,6 +267,9 @@ namespace Microsoft.Terminal.Wpf {
 				Height = (int)newSizeHeight,
 			};
 
+			// Auto-resize is scheduled by TerminalContainer only after HwndHost has
+			// applied this layout rectangle to the native child. Resizing here can
+			// draw first and then have SWP_NOCOPYBITS discard the completed frame.
 			if (!this.AutoResize) {
 				// Renderer will not resize on control resize. We have to manually calculate the margin to fill in the space.
 				terminalGrid.Margin = CalculateMargins(new Size((int)sizeInfo.NewSize.Width, (int)sizeInfo.NewSize.Height));
@@ -257,34 +319,85 @@ namespace Microsoft.Terminal.Wpf {
 
 
 		private async void TermControl_UserScrolled(object sender, int delta) {
-
-			var lineDelta = 120 / ScrollLines;
-			this.accumulatedDelta += delta;
-
-			if (this.accumulatedDelta < lineDelta && this.accumulatedDelta > -lineDelta) {
+			if (this.disposed || delta == 0) {
 				return;
 			}
 
-			await RunAsync(() => {
-				var lines = -this.accumulatedDelta / lineDelta;
-				this.scrollbar.Value += lines;
-				this.accumulatedDelta = 0;
+			try {
+				var scrollLines = ScrollLines;
+				if (scrollLines == 0) {
+					this.accumulatedScrollUnits = 0;
+					return;
+				}
 
-				this.termContainer.UserScroll((int)this.scrollbar.Value);
-			});
+				var unitsPerNotch = scrollLines == WheelPageScroll ? 1d : scrollLines;
+				this.accumulatedScrollUnits += (delta / 120d) * unitsPerNotch;
+				var wholeUnits = Math.Truncate(this.accumulatedScrollUnits);
+				if (wholeUnits == 0) {
+					return;
+				}
+
+				this.accumulatedScrollUnits -= wholeUnits;
+				await RunAsync(() => {
+					if (this.disposed) {
+						return;
+					}
+
+					var minimum = this.scrollbar.Minimum;
+					var maximum = Math.Max(minimum, this.scrollbar.Maximum);
+					var currentValue = double.IsFinite(this.scrollbar.Value)
+						? Math.Clamp(this.scrollbar.Value, minimum, maximum)
+						: minimum;
+					var scrollUnit = 1d;
+					if (scrollLines == WheelPageScroll) {
+						scrollUnit = double.IsFinite(this.scrollbar.ViewportSize) && this.scrollbar.ViewportSize > 0
+							? this.scrollbar.ViewportSize
+							: Math.Max(1d, this.scrollbar.LargeChange);
+					}
+
+					var targetValue = Math.Clamp(currentValue - (wholeUnits * scrollUnit), minimum, maximum);
+					this.scrollbar.Value = targetValue;
+					this.termContainer.UserScroll((int)Math.Round(targetValue));
+				});
+			} catch (OperationCanceledException) {
+				// The UI dispatcher is shutting down.
+			} catch (Exception ex) {
+				Debug.WriteLine($"Terminal wheel scroll failed: {ex}");
+			}
 		}
 
 		private async void TermControl_TerminalScrolled(object sender, (int viewTop, int viewHeight, int bufferSize) e) {
-			await RunAsync(() => {
-				this.scrollbar.Minimum = 0;
-				this.scrollbar.Maximum = e.bufferSize - e.viewHeight;
-				this.scrollbar.Value = e.viewTop;
-				this.scrollbar.ViewportSize = e.viewHeight;
-			});
+			try {
+				await RunAsync(() => {
+					if (this.disposed) {
+						return;
+					}
+
+					var viewHeight = Math.Max(0, e.viewHeight);
+					var bufferSize = Math.Max(viewHeight, e.bufferSize);
+					var maximum = bufferSize - viewHeight;
+					this.scrollbar.Minimum = 0;
+					this.scrollbar.Maximum = maximum;
+					this.scrollbar.ViewportSize = viewHeight;
+					this.scrollbar.Value = Math.Clamp(e.viewTop, 0, maximum);
+				});
+			} catch (OperationCanceledException) {
+				// The UI dispatcher is shutting down.
+			} catch (Exception ex) {
+				Debug.WriteLine($"Terminal scroll state update failed: {ex}");
+			}
 		}
 		private void Scrollbar_Scroll(object sender, UI.Xaml.Controls.Primitives.ScrollEventArgs e) {
-			var viewTop = (int)e.NewValue;
-			this.termContainer.UserScroll(viewTop);
+			if (this.disposed) {
+				return;
+			}
+
+			try {
+				var viewTop = (int)Math.Round(Math.Clamp(e.NewValue, this.scrollbar.Minimum, this.scrollbar.Maximum));
+				this.termContainer.UserScroll(viewTop);
+			} catch (Exception ex) {
+				Debug.WriteLine($"Terminal scrollbar input failed: {ex}");
+			}
 		}
 
 		private class TermControlAutomationPeer : FrameworkElementAutomationPeer {

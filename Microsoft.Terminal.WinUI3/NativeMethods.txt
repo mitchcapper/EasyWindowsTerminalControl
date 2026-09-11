@@ -12,6 +12,7 @@ GetWindowLong
 GetWindowThreadProcessId
 GetCurrentThreadId
 IsWindow
+DestroyWindow
 GetWindowRect
 WINDOWPOS
 IsChild

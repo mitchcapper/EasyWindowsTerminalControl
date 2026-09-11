@@ -8,7 +8,7 @@ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"  xmlns:wi
 			 x:Name="terminalUserControl"
              d:DesignHeight="450"
              d:DesignWidth="800"
-             
+
              mc:Ignorable="d">
 	<Grid x:Name="terminalGrid">
 		<Grid.ColumnDefinitions>
@@ -18,7 +18,14 @@ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"  xmlns:wi
 		<winui3:TerminalContainer  x:Name="termContainer"/>
 		<ScrollBar x:Name="scrollbar"
                    Grid.Column="1"
-                   Scroll="Scrollbar_Scroll"
-                   SmallChange="1" />
+                   Width="12"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch"
+                   Visibility="Visible"
+                   IndicatorMode="MouseIndicator"
+                   Background="#2D2D2D"
+                   Foreground="#A6A6A6"
+                   SmallChange="1"
+                   LargeChange="24" />
 	</Grid>
 </UserControl>
