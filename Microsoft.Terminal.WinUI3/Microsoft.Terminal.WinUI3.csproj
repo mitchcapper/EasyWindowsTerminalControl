@@ -22,15 +22,15 @@
 		<Compile Include="..\external\terminal\src\cascadia\WpfTerminalControl\TerminalTheme.cs" Link="external\TerminalTheme.cs" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Windows.Console.ConPTY" Version="1.24.260710001" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.106">
+		<PackageReference Include="Microsoft.Windows.Console.ConPTY" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.Windows.CsWin32">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250310001" />
-		<PackageReference Include="WinUIEx" Version="2.5.1" />
-		<PackageReference Include="CI.Microsoft.Terminal.Wpf" GeneratePathProperty="true" ExcludeAssets="all" Version="1.25.260303002" />
+		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" />
+		<PackageReference Include="WinUIEx" />
+		<PackageReference Include="CI.Microsoft.Terminal.Wpf" GeneratePathProperty="true" ExcludeAssets="all" />
 
 	</ItemGroup>
 

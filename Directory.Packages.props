@@ -1,0 +1,20 @@
+<Project>
+  <!-- Central package versions for all projects. version-increment.ps1 updates the packages built from this repo. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Built from this repo -->
+    <PackageVersion Include="CI.Microsoft.Terminal.WinUI3.Unofficial" Version="1.0.20-beta.1" />
+    <PackageVersion Include="EasyWindowsTerminalControl.WinUI" Version="1.0.20-beta.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="CI.Microsoft.Terminal.Wpf" Version="1.25.260303002" />
+    <PackageVersion Include="Microsoft.Windows.Console.ConPTY" Version="1.24.260710001" />
+    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.106" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.7.250310001" />
+    <PackageVersion Include="System.Memory" Version="4.6.3" />
+    <PackageVersion Include="WinUIEx" Version="2.5.1" />
+  </ItemGroup>
+</Project>

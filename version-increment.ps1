@@ -43,8 +43,8 @@ Write-Host "- Build after increment: $($Build.IsPresent)"
 $easyTerminalProj = "EasyWindowsTerminalControl\EasyWindowsTerminalControl.csproj"
 $easyTerminalWinUIProj = "EasyWindowsTerminalControl.WinUI\EasyWindowsTerminalControl.WinUI.csproj"
 $terminalWinUI3Proj = "Microsoft.Terminal.WinUI3\Microsoft.Terminal.WinUI3.csproj"
-$termExampleProj = "TermExample\TermExample.csproj"
-$termExampleWinUIProj = "TermExample.WinUI\TermExample.WinUI.csproj"
+# Package versions, including the packages built from this repo, are set centrally
+$packagesProps = "Directory.Packages.props"
 
 # Get current versions from project files
 function Get-ProjectVersion {
@@ -192,7 +192,7 @@ function Update-ProjectVersion {
     Write-Host "Updated $ProjectPath to version $NewVersion"
 }
 
-# Update dependency reference in WinUI project
+# Update a package version in Directory.Packages.props
 function Update-DependencyVersion {
     param (
         [string]$ProjectPath,
@@ -201,8 +201,8 @@ function Update-DependencyVersion {
     )
 
     $content = Get-Content $ProjectPath -Raw
-    $pattern = "<PackageReference Include=""$DependencyName"" Version=""[^""]+"""
-    $replacement = "<PackageReference Include=""$DependencyName"" Version=""$NewVersion"""
+    $pattern = "<PackageVersion Include=""$DependencyName"" Version=""[^""]+"""
+    $replacement = "<PackageVersion Include=""$DependencyName"" Version=""$NewVersion"""
 
     if ($content -match $pattern) {
         $updatedContent = $content -replace $pattern, $replacement
@@ -220,12 +220,12 @@ Update-ProjectVersion -ProjectPath $easyTerminalWinUIProj -NewVersion $newWinUIV
 Update-ProjectVersion -ProjectPath $terminalWinUI3Proj -NewVersion $newTerminalVer
 
 # Update dependency reference in WinUI project
-Update-DependencyVersion -ProjectPath $easyTerminalWinUIProj -DependencyName "CI.Microsoft.Terminal.WinUI3.Unofficial" -NewVersion $newTerminalVer
+Update-DependencyVersion -ProjectPath $packagesProps -DependencyName "CI.Microsoft.Terminal.WinUI3.Unofficial" -NewVersion $newTerminalVer
 
 # Update the two example apps
-Update-DependencyVersion -ProjectPath $termExampleProj -DependencyName "EasyWindowsTerminalControl" -NewVersion $newVer
+Update-DependencyVersion -ProjectPath $packagesProps -DependencyName "EasyWindowsTerminalControl" -NewVersion $newVer
 
-Update-DependencyVersion -ProjectPath $termExampleWinUIProj -DependencyName "EasyWindowsTerminalControl.WinUI" -NewVersion $newWinUIVer
+Update-DependencyVersion -ProjectPath $packagesProps -DependencyName "EasyWindowsTerminalControl.WinUI" -NewVersion $newWinUIVer
 
 Write-Host "`nVersion numbers have been updated successfully!" -ForegroundColor Green
 
