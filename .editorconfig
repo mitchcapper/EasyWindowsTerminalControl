@@ -1,0 +1,25 @@
+# Records the style the code already uses.
+root = true
+
+[*]
+insert_final_newline = true
+
+[*.{cs,csproj}]
+indent_style = tab
+indent_size = 4
+
+[*.{props,targets,json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.ps1]
+indent_style = space
+indent_size = 4
+
+[*.cs]
+charset = utf-8
+csharp_new_line_before_open_brace = none
+csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_finally = false
+csharp_style_namespace_declarations = block_scoped:silent
