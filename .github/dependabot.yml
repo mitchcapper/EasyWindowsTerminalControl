@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Built from this repo; version-increment.ps1 keeps these in step.
+      - dependency-name: CI.Microsoft.Terminal.WinUI3.Unofficial
+      - dependency-name: EasyWindowsTerminalControl
+      - dependency-name: EasyWindowsTerminalControl.WinUI
+      # Moving to a new Windows App SDK major raises consumers' minimum; do it by hand.
+      - dependency-name: Microsoft.WindowsAppSDK
+        update-types: ["version-update:semver-major"]
+    groups:
+      windows-app-sdk:
+        patterns:
+          - Microsoft.WindowsAppSDK*
+          - Microsoft.Windows.SDK.BuildTools
+
+  # No gitsubmodule updates: external/Terminal must match the native DLL shipped in
+  # CI.Microsoft.Terminal.Wpf, so it is bumped together with that package.
