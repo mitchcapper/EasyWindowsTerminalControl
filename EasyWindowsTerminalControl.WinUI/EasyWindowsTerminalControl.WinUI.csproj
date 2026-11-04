@@ -26,8 +26,8 @@
 		<None Include="../icon.png" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250310001" />
+		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" />
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Include="..\EasyWindowsTerminalControl\EasyTerminalControl.cs" Link="EasyTerminalControl.cs" />
@@ -40,9 +40,9 @@
 		<Compile Include="..\EasyWindowsTerminalControl\TermPTY.cs" Link="TermPTY.cs" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Windows.Console.ConPTY" Version="1.24.260710001" />
-		<PackageReference Include="CI.Microsoft.Terminal.WinUI3.Unofficial" Version="1.0.20-beta.1" />
-		<PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.106">
+		<PackageReference Include="Microsoft.Windows.Console.ConPTY" />
+		<PackageReference Include="CI.Microsoft.Terminal.WinUI3.Unofficial" />
+		<PackageReference Include="Microsoft.Windows.CsWin32">
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
 	</ItemGroup>
