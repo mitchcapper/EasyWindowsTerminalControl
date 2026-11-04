@@ -5,6 +5,9 @@ on:
     branches-ignore:
       - trash
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
