@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - trash
+  pull_request:
 
 jobs:
   build:
@@ -33,7 +34,7 @@ jobs:
         run: ./build.ps1 -Configuration ${{ matrix.configuration }}
 
       - name: Debug Session
-        if: ${{ failure() && vars.DEBUG_FAIL == '1' && env.WLB_BUILD_TRACE == '1' }}
+        if: ${{ failure() && github.event_name == 'push' && vars.DEBUG_FAIL == '1' && env.WLB_BUILD_TRACE == '1' }}
         run: .github/debug_ssh_start.ps1
 
       - uses: actions/upload-artifact@v4
