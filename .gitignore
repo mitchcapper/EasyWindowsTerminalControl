@@ -1,0 +1,81 @@
+## .gitignore for EasyWindowsTerminalControl
+## Based on the dotnet/Visual Studio template, trimmed to what this repo produces.
+
+# Build output (SDK-style projects, incl. bin/x64/<Config>/... for WinUI)
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+# Local NuGet output: PackageOutputPath (../Publish) and build.ps1 (publish/)
+/[Pp]ublish/
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# MSBuild logs
+*.binlog
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# Visual Studio
+.vs/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.VC.db
+*.VC.VC.opendb
+ipch/
+
+# JetBrains Rider / ReSharper
+.idea/
+*.sln.iml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# VS Code (keep shared settings only)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# WinUI / MSIX packaging (TermExample.WinUI)
+# Note: *.pubxml is intentionally NOT ignored; Properties/PublishProfiles are tracked.
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+*.appx
+*.appxbundle
+*.appxupload
+*.msix
+*.msixbundle
+*.msixupload
+
+# Signing certificates and secrets
+*.pfx
+*.publishsettings
+
+# Tests and coverage
+[Tt]est[Rr]esult*/
+*.trx
+coverage*.json
+coverage*.xml
+*.coverage
+*.coveragexml
+
+# OS / editor junk
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*~
+~$*
+*.swp
